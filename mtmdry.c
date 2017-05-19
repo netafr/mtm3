@@ -57,14 +57,14 @@ void filterList(Node head ,bool (*conditionFunc)(int, void*), void* param) {
     Node temp = head;
     while(temp != NULL) {
         if(conditionFunc(temp -> n, param)) {
+            temp = temp -> next;
             continue;
         } else {
-            Node to_delete = temp -> next;
-            temp -> next = to_delete -> next;
+            Node to_delete = temp;
+            temp = to_delete -> next;
             to_delete -> next = NULL;
             //destroyList(to_delete);
         }
-        temp = temp -> next;
     }
 }
 
@@ -106,9 +106,9 @@ int main() {
     head2 -> next = createNode(5);
     head2 -> next -> next = createNode(6);
     head2 -> next -> next -> next = createNode(7);
-    int *p1, *p2;
+    int *p1 = malloc(sizeof(int)), *p2 = malloc(sizeof(int));
     *p1 = 1;
     *p2 = 2;
-    concatLists(head1, head2, checkEven, (void *)p1);
-    concatLists(head1, head2, checkEven, (void *)p2);
+    Node even_node = concatLists(head1, head2, checkEven, (void *)p1);
+    Node odd_node = concatLists(head1, head2, checkEven, (void *)p2);
 }
