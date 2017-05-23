@@ -6,13 +6,15 @@ typedef void* Element;
 typedef Element (*CopyFunction)(Element);
 typedef void (*FreeFunction)(Element);
 typedef int(*CompareFunction)(Element, Element);
+typedef bool(*FilterFunction)(Element, ListFilterKey);
+typedef void* ListFilterKey;
 
 typedef enum {
     NODE_SUCCESS, NODE_NULL_ARGUMENT, NODE_OUT_OF_MEMORY
 } NodeResult;
 
 Node NodeCreate (Element element, CopyFunction copy_function, 
-                CompareFunction, compare_function ,FreeFunction free_function);
+                CompareFunction compare_function ,FreeFunction free_function);
 NodeResult NodeDestroy (Node target, Node head);
 Node GetNext (Node node);
 Node CopyNode (Node node);
