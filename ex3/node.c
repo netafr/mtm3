@@ -1,7 +1,9 @@
 #include "node.h"
 #include <malloc.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
 //Node def
 struct list_node { 
     Element node_data;
@@ -18,6 +20,8 @@ Node NodeCreate(Element element, CopyFunction copy_function,
     if(node == NULL) {
         return NULL;
     }
+    assert (node -> copy_element != NULL);
+    assert (node -> free_element != NULL);
     node -> copy_element = copy_function;
     node -> free_element = free_function;
     if(element == NULL) {
@@ -63,8 +67,19 @@ Node GetNext (Node node) {
     }
     return node -> next;
 }
-/* The function receives a node to copy, and returns a new copy of the node.
-   */
+/* The function receives a node and a second one (target) to insert right after 
+   the first one. Returns NULL argument error if the first node is null, and 
+    success elsewise. We assume the target node is not NULL.  */
+NodeResult NodeInsert (Node node, Node target) {
+    if(node == NULL) {
+        return NODE_NULL_ARGUMENT;
+    }
+    assert (target != NULL);
+    target -> next = node -> next;
+    node -> next = target;
+    return NODE_SUCCESS;
+}
+/* The function receives a node to copy, and returns a new copy of the node. */
 Node CopyNode(Node node) {
     if(node == NULL) {
         return NULL;
@@ -83,4 +98,24 @@ int CompareNode(Node first, Node second, CompareFunction compare_element) {
     in the filter standart. */
 bool FilterNode(Node node, ListFilterKey key, FilterFunction filter_element) {
     return(filter_element(node -> node_data ,key));
+}
+
+/* The function receives a node, and returns the last Node linked in the nodes'
+chain of nodes. */
+Node GetLast (Node node) {
+    if (node == NULL) {
+        return NULL
+    }
+    Node temp = node;
+    while (temp -> next != NULL)  {
+        temp = temp -> next;
+    }
+    return temp;
+}
+/* The function receives a node, and returns the data it holds. */
+void* GetData (Node node) {
+    if (node == NULL) {
+        return NULL;
+    }
+    return node -> data;
 }
