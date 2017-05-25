@@ -27,7 +27,7 @@ typedef enum {
 /*  The function receives an element, a copy function and a free function,
     and allocates memory for the node. Initializes the node for the given */
 Node NodeCreate(ListElement element, CopyListElement copy_function) {
-    Node node = malloc(sizeof(*node));
+    Node node = calloc(1, sizeof(*node));
     if(node == NULL) {
         return NULL;
     }
