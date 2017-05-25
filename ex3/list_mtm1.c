@@ -24,6 +24,10 @@ typedef enum {
     NODE_SUCCESS, NODE_NULL_ARGUMENT, NODE_OUT_OF_MEMORY
 } NodeResult;
 
+/* IMPORTANT. We implemented the list with the first element as "dummy", so it
+    has no real meaning expect in the implemnation itself. */
+
+
 /*  The function receives an element, a copy function and a free function,
     and allocates memory for the node. Initializes the node for the given */
 static Node NodeCreate(ListElement element, CopyListElement copy_function) {
@@ -151,7 +155,8 @@ List listCopy(List list) {
     if(new_list == NULL) {
         return NULL;
     }
-    Node copy_iterator = list -> list_head, dest_iterator = GetLast(new_list);
+    Node copy_iterator = list -> list_head -> next, 
+                                        dest_iterator = GetLast(new_list);
     while(copy_iterator != NULL) {
         //Insert new copied node.
         NodeResult add_node = NodeInsertAfter(dest_iterator,
@@ -159,6 +164,9 @@ List listCopy(List list) {
         if(add_node != NODE_SUCCESS) {
             free(new_list);
             return NULL;
+        }
+        if(list -> list_iterator == copy_iterator) {
+            new_list -> list_iterator = dest_iterator -> next;
         }
         copy_iterator = copy_iterator -> next;
         dest_iterator = dest_iterator -> next;
