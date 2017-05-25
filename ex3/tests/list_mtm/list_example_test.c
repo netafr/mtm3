@@ -21,6 +21,20 @@ static bool isLongerThan(ListElement element,ListFilterKey number) {
     return strlen(string) > *(int*)number;
 }
 
+static int stringCmp(ListElement first, ListElement second) {
+	return strcmp((char*)first, (char*)second);
+}
+
+void printList(List list) {
+   char* str = listGetFirst(list);
+   while(str != NULL) {
+		printf("\n");
+   		printf("%s ", str);
+   		str = listGetNext(list);
+   }
+   printf("\n");
+}
+
 static bool testListCreate() {
 	ASSERT_TEST(listCreate(NULL,NULL) == NULL);
 	ASSERT_TEST(listCreate(NULL,NULL) == NULL);
@@ -80,6 +94,7 @@ static bool testListGetNext() {
 		str = listGetNext(list);
 	}
 	ASSERT_TEST(strcmp("bbb", str) == 0);
+	listDestroy(list);
 	return true;
 }
 
@@ -89,6 +104,7 @@ static bool testListInsertFirst() {
 	for (int i=0;i <5; ++i){
 		listInsertFirst(list,a[i]);
 	}
+	listDestroy(list);
 	return true;
 }
 
@@ -109,6 +125,15 @@ static bool testListRemoveCurrent() {
 }
 
 static bool testListSort() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	printList(list);
+	listSort(list, stringCmp);
+	printList(list);
+	listDestroy(list);
 	return true;
 }
 

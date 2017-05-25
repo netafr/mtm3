@@ -283,11 +283,40 @@ ListResult listRemoveCurrent(List list) {
     return LIST_SUCCESS;
 }
 
+void NodeSwap(Node node1, Node node2) {
+    ListElement temp = node1 -> node_data;
+    node1 -> node_data = node2 -> node_data;
+    node2 -> node_data = temp;
+}
+
+void BubbleSort(List list, CompareListElements compareElement) {
+    assert(list != NULL && compareElement != NULL);
+    int swapped;
+    Node iterator;
+    Node last_sorted = NULL;
+    if(list -> list_head -> next == NULL) {
+        return;
+    }
+    do  {
+        swapped = 0;
+        iterator = list -> list_head -> next;
+        while(iterator -> next != last_sorted) {
+            if(compareElement(iterator -> node_data, 
+                                        iterator -> next -> node_data) < 0) {
+                NodeSwap(iterator, iterator -> next);
+                swapped = 1;
+            }
+            iterator = iterator -> next;
+        }
+        last_sorted = iterator;
+    } while(swapped);
+}
+
 ListResult listSort(List list, CompareListElements compareElement) {
     if(list == NULL || compareElement == NULL) {
         return LIST_NULL_ARGUMENT;
     }
-    
+    BubbleSort(list, compareElement);
     return LIST_SUCCESS;
 }
 
