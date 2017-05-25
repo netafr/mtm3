@@ -32,3 +32,4 @@ Node GetLast (Node node);
 
 
 
+//Going to scrap this, moving everything to list cause we cant compile 2 files in list (they wont compile them).

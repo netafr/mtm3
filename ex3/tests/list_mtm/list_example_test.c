@@ -1,5 +1,5 @@
 #include "test_utilities.h"
-#include "../list_mtm/list_mtm1.h"
+#include "../../list_mtm1.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -32,7 +32,7 @@ static bool testListCreate() {
 static bool testListFilter() {
 	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
 	List list = listCreate(copyString,freeString);
-	for (int i=0;i <5; ++i){
+	for (int i = 0; i < 5; ++i){
 		listInsertFirst(list,a[i]);
 	}
 	int key = 5;
@@ -59,14 +59,36 @@ static bool testListGetSize() {
 }
 
 static bool testListGetFirst() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	ASSERT_TEST(strcmp("I", listGetFirst(list)) == 0);
+	listDestroy(list);
 	return true;
 }
 
 static bool testListGetNext() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	char* str = listGetFirst(list);
+	for(int i = 0; i < 3; ++i) {
+		str = listGetNext(list);
+	}
+	ASSERT_TEST(strcmp("bbb", str) == 0);
 	return true;
 }
 
 static bool testListInsertFirst() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
 	return true;
 }
 
