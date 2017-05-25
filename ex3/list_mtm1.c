@@ -26,7 +26,7 @@ typedef enum {
 
 /*  The function receives an element, a copy function and a free function,
     and allocates memory for the node. Initializes the node for the given */
-Node NodeCreate(ListElement element, CopyListElement copy_function) {
+static Node NodeCreate(ListElement element, CopyListElement copy_function) {
     Node node = calloc(1, sizeof(*node));
     if(node == NULL) {
         return NULL;
@@ -46,7 +46,8 @@ Node NodeCreate(ListElement element, CopyListElement copy_function) {
 /* The function receives a node to destroy, and a node which is the "first", 
     to start from. It frees the node destroyed and the element the node contains 
     if the "first" node is NULL, we return a NULL argument error. */
-NodeResult NodeDestroy(Node target, Node head, FreeListElement free_element) {
+static NodeResult NodeDestroy(Node target, Node head, 
+                                                FreeListElement free_element) {
     if(head == NULL) {
         return NODE_NULL_ARGUMENT;
     }
@@ -71,7 +72,7 @@ NodeResult NodeDestroy(Node target, Node head, FreeListElement free_element) {
 /* The function receives a node and a second one (target) to insert right after 
    the first one. Returns NULL argument error if the first node is null, and 
     success elsewise. We assume the target node is not NULL.  */
-NodeResult NodeInsertAfter(Node node, Node target) {
+static NodeResult NodeInsertAfter(Node node, Node target) {
     if(node == NULL) {
         return NODE_NULL_ARGUMENT;
     }
@@ -81,7 +82,7 @@ NodeResult NodeInsertAfter(Node node, Node target) {
     return NODE_SUCCESS;
 }
 
-NodeResult NodeInsertBefore(Node current, Node target, Node head) {
+static NodeResult NodeInsertBefore(Node current, Node target, Node head) {
     if(head == NULL) {
         return NODE_NULL_ARGUMENT;
     }
@@ -94,7 +95,7 @@ NodeResult NodeInsertBefore(Node current, Node target, Node head) {
     return NODE_SUCCESS;
 }
 /* The function receives a node to copy, and returns a new copy of the node. */
-Node CopyNode(Node node, CopyListElement copy_element) {
+static Node CopyNode(Node node, CopyListElement copy_element) {
     if(node == NULL) {
         return NULL;
     }
@@ -103,7 +104,7 @@ Node CopyNode(Node node, CopyListElement copy_element) {
 
 /* The function receives a node, and returns the last Node linked in the nodes'
 chain of nodes. */
-Node GetLast (List list) {
+static Node GetLast (List list) {
     if (list == NULL) {
         return NULL;
     }
@@ -139,6 +140,9 @@ List listCreate(CopyListElement copyElement, FreeListElement freeElement) {
 }
 
 
+/* The function gets a list, create and returns a new list with the same 
+    (copied) elements. If the given list is NULL we return NULL, also in any
+    case of failed memory allocation. */
 List listCopy(List list) {
     if(list == NULL) {
         return NULL;
@@ -149,6 +153,7 @@ List listCopy(List list) {
     }
     Node copy_iterator = list -> list_head, dest_iterator = GetLast(new_list);
     while(copy_iterator != NULL) {
+        //Insert new copied node.
         NodeResult add_node = NodeInsertAfter(dest_iterator,
                                 CopyNode(copy_iterator, list -> copy_function));
         if(add_node != NODE_SUCCESS) {
@@ -157,11 +162,12 @@ List listCopy(List list) {
         }
         copy_iterator = copy_iterator -> next;
         dest_iterator = dest_iterator -> next;
-        (new_list -> size)++;
+        (new_list -> size)++; //Increase new list size.
     }
     return new_list;
 }
 
+// The function returns the size of the given list. Returns -1 if list is NULL. 
 int listGetSize(List list) {
     if(list == NULL) {
         return -1;
@@ -169,6 +175,8 @@ int listGetSize(List list) {
     return list -> size;
 }
 
+/* The function sets the inner iterator to the first element of the given list.
+    If list is NULL or empty we return NULL. */
 ListElement listGetFirst(List list) {
     if(list == NULL || list -> size == 0) {
         return NULL;
@@ -177,6 +185,9 @@ ListElement listGetFirst(List list) {
     return(list -> list_iterator -> node_data);
 } 
 
+/* The function sets the iterator to the next element in the list and returns 
+    the element. If list is NULL, empty or the iterator is illegal or the last
+    element we return NULL. It gets a list. */
 ListElement listGetNext(List list) {
     if(list == NULL || list -> size == 0 || list -> list_iterator == NULL || 
                                         list -> list_iterator -> next == NULL) {
@@ -186,6 +197,9 @@ ListElement listGetNext(List list) {
     return(list -> list_iterator -> node_data);
 }
 
+/* The function returns the current element in the list that the iterator of the 
+    given list is on. If list is NULL or empty or the iterator is 
+    illegal we return NULL. */
 ListElement listGetCurrent(List list) {
     if(list == NULL || list -> size == 0 || list -> list_iterator == NULL) {
         return NULL;
@@ -193,7 +207,10 @@ ListElement listGetCurrent(List list) {
     return(list -> list_iterator -> node_data);
 }
 
-
+/*The function gets a list and an element, and inserts the element as the first
+    element of the list. If the list is NULL it returns LIST_NULL_ARGUMENT, 
+    if there is memory problem returns LIST_OUT_OF_MEMORY, otherwise return
+    LIST_SUCCESS. Increases the size of the list. */
 ListResult listInsertFirst(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -211,6 +228,10 @@ ListResult listInsertFirst(List list, ListElement element) {
     return LIST_SUCCESS;
 }
 
+/*The function gets a list and an element, and inserts the element as the last
+    element of the list. If the list is NULL it returns LIST_NULL_ARGUMENT, 
+    if there is memory problem returns LIST_OUT_OF_MEMORY, otherwise return
+    LIST_SUCCESS. Increases the size of the list. */
 ListResult listInsertLast(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -229,9 +250,17 @@ ListResult listInsertLast(List list, ListElement element) {
     return LIST_SUCCESS;
 }
 
+/* The function gets a list and an element, and inserts the element before the
+    current element pointed by the inner iterator.If the list is NULL it returns 
+    LIST_NULL_ARGUMENT,if there is memory problem returns LIST_OUT_OF_MEMORY, 
+    and if the iterator is illegal returns LIST_INVALID_CURRENT,
+    otherwise return LIST_SUCCESS. Increases the size of the list */
 ListResult listInsertBeforeCurrent(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
+    }
+    if(list -> list_iterator == NULL) {
+        return LIST_INVALID_CURRENT;
     }
     Node to_insert = NodeCreate(element, list -> copy_function);
     if(to_insert == NULL) {
@@ -247,6 +276,11 @@ ListResult listInsertBeforeCurrent(List list, ListElement element) {
     
 }
 
+/* The function gets a list and an element, and inserts the element after the
+    current element pointed by the inner iterator.If the list is NULL it returns 
+    LIST_NULL_ARGUMENT,if there is memory problem returns LIST_OUT_OF_MEMORY, 
+    and if the iterator is illegal returns LIST_INVALID_CURRENT,
+    otherwise return LIST_SUCCESS. Increases the size of the list */
 ListResult listInsertAfterCurrent(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -266,6 +300,11 @@ ListResult listInsertAfterCurrent(List list, ListElement element) {
     return LIST_SUCCESS;
 }
 
+/* The function gets a list and removes from the list the current element 
+    pointed by the inner iterator. If the list is NULL it returns 
+    LIST_NULL_ARGUMENT and if the iterator is illegal returns 
+    LIST_INVALID_CURRENT,  otherwise return LIST_SUCCESS.
+    Decreases the size of the list */
 ListResult listRemoveCurrent(List list) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -283,13 +322,16 @@ ListResult listRemoveCurrent(List list) {
     return LIST_SUCCESS;
 }
 
-void NodeSwap(Node node1, Node node2) {
+/* The function gets 2 nodes and swaps their data. */
+static void NodeSwap(Node node1, Node node2) {
     ListElement temp = node1 -> node_data;
     node1 -> node_data = node2 -> node_data;
     node2 -> node_data = temp;
 }
 
-void BubbleSort(List list, CompareListElements compareElement) {
+/* The function gets a list and a pointer to a compare function and bubble sorts 
+    the list according to the compate function. */
+static void BubbleSort(List list, CompareListElements compareElement) {
     assert(list != NULL && compareElement != NULL);
     int swapped;
     Node iterator;
@@ -312,6 +354,9 @@ void BubbleSort(List list, CompareListElements compareElement) {
     } while(swapped);
 }
 
+/* The function gets a list and a pointer to a compare function and sorts
+    the given list. If the list or the funcion pointer is NULL we return 
+    LIST_NULL_ARGUMENT, otherwise return LIST_SUCCESS. */
 ListResult listSort(List list, CompareListElements compareElement) {
     if(list == NULL || compareElement == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -320,6 +365,11 @@ ListResult listSort(List list, CompareListElements compareElement) {
     return LIST_SUCCESS;
 }
 
+/* The function gets a list, pointer to filter function and a filter key, and
+    creates and returns a new list composed from the elements of the given list
+    that fulfill the filter function condition with the given key. If either
+    the list or the pointer to the function are NULL, or there is a memory 
+    problem we return NULL, otherwise we return the new list. */
 List listFilter(List list, FilterListElement filterElement, ListFilterKey key) {
     if(filterElement == NULL || list == NULL) {
         return NULL;
@@ -345,6 +395,8 @@ List listFilter(List list, FilterListElement filterElement, ListFilterKey key) {
     return filtered_list;
 }
 
+/* The function gets a list and clears and frees the list's elements. If the 
+    list is NULL we return LIST_NULL_ARGUMENT, otherwise LIST_SUCCESSS. */
 ListResult listClear(List list) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
@@ -360,6 +412,8 @@ ListResult listClear(List list) {
     return LIST_SUCCESS;
 }
 
+/* The function gets a list and destroys it, meaning clearing all it's elements
+    and freeing the list itself. If list is NULL we do nothing. */
 void listDestroy(List list) {
     if(list == NULL) {
         return;

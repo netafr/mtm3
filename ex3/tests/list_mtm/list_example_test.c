@@ -109,6 +109,7 @@ static bool testListInsertFirst() {
 }
 
 static bool testListInsertLast() {
+	
 	return true;
 }
 
