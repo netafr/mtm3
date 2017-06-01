@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 static ListElement copyString(ListElement str){
 	assert(str);
@@ -21,19 +22,19 @@ static bool isLongerThan(ListElement element,ListFilterKey number) {
     return strlen(string) > *(int*)number;
 }
 
+static bool hasLetter(ListElement element,ListFilterKey letter) {
+	char* str = element;
+	char key = *(char*)letter;
+    if (strchr(str, (int)key) != NULL) {
+    	return true;
+    }
+    return false;
+}
+
 static int stringCmp(ListElement first, ListElement second) {
 	return strcmp((char*)first, (char*)second);
 }
 
-void printList(List list) {
-   char* str = listGetFirst(list);
-   while(str != NULL) {
-		printf("\n");
-   		printf("%s ", str);
-   		str = listGetNext(list);
-   }
-   printf("\n");
-}
 
 static bool testListCreate() {
 	ASSERT_TEST(listCreate(NULL,NULL) == NULL);
@@ -42,6 +43,7 @@ static bool testListCreate() {
 	ASSERT_TEST(listCreate(NULL,freeString) == NULL);
 	return true;
 }
+
 static bool testListFilter() {
 	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
 	List list = listCreate(copyString,freeString);
@@ -53,8 +55,17 @@ static bool testListFilter() {
 	ASSERT_TEST(listGetSize(filtered) == 1);
 	ASSERT_TEST(strcmp(listGetFirst(filtered),a[3])==0);
 	ASSERT_TEST(listFilter(filtered, NULL, &key) == NULL);
-	listDestroy(list);
 	listDestroy(filtered);
+	char letterh = 'h';
+	char letterq = 'q';
+	List filtered2 = listFilter(list, hasLetter, &letterh);
+	ASSERT_TEST(listGetSize(filtered2) == 1);
+	ASSERT_TEST(strcmp(listGetFirst(filtered2),a[3])==0);
+	listDestroy(filtered2);
+	List filtered3 = listFilter(list, hasLetter, &letterq);
+	ASSERT_TEST(listGetSize(filtered3) == 0);
+	listDestroy(filtered3); 
+	listDestroy(list);
 	return true;
 }
 static bool testListCopy() {
@@ -164,18 +175,74 @@ static bool testListInsertLast() {
 	return true;
 }
 
-//Until here all tests check all cases (not memory failure ofc).
 static bool testListInsertBeforeCurrent() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	ListResult insert_result = listInsertBeforeCurrent(list, "error");
+	ASSERT_TEST(insert_result == LIST_INVALID_CURRENT);
+	char* str = listGetFirst(list);
+	insert_result = listInsertBeforeCurrent(list, "first");
+	ASSERT_TEST(insert_result == LIST_SUCCESS);
+	str = listGetFirst(list);
+	ASSERT_TEST(strcmp(str, "first") == 0);
+	str = listGetNext(list);
+	ASSERT_TEST(strcmp(str, "I") == 0);
+	insert_result = listInsertBeforeCurrent(list, "second");
+	ASSERT_TEST(insert_result == LIST_SUCCESS);
+	ASSERT_TEST(listInsertBeforeCurrent(NULL, "hi") == LIST_NULL_ARGUMENT);
+	listDestroy(list);
 	return true;
 }
 
 static bool testListInsertAfterCurrent() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	ListResult insert_result = listInsertAfterCurrent(list, "error");
+	ASSERT_TEST(insert_result == LIST_INVALID_CURRENT);
+	char* str = listGetFirst(list);
+	insert_result = listInsertAfterCurrent(list, "second");
+	ASSERT_TEST(insert_result == LIST_SUCCESS);
+	ASSERT_TEST(strcmp(str, "I") == 0);
+	str = listGetNext(list);
+	ASSERT_TEST(strcmp(str, "second") == 0);
+	insert_result = listInsertAfterCurrent(list, "third");
+	str = listGetNext(list);
+	ASSERT_TEST(strcmp(str, "third") == 0);
+	ASSERT_TEST(insert_result == LIST_SUCCESS);
+	ASSERT_TEST(listInsertAfterCurrent(NULL, "hi") == LIST_NULL_ARGUMENT);
+	listDestroy(list);
 	return true;
 }
 
+
+
 static bool testListRemoveCurrent() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	ListResult remove_result = listRemoveCurrent(list);
+	ASSERT_TEST(remove_result == LIST_INVALID_CURRENT);
+	char* str = listGetFirst(list);
+	remove_result = listRemoveCurrent(list);
+	ASSERT_TEST(remove_result == LIST_SUCCESS);
+	str = listGetFirst(list);
+	ASSERT_TEST(strcmp(str, "hello mister fish") == 0);
+	str = listGetNext(list);
+	remove_result = listRemoveCurrent(list);
+	ASSERT_TEST(remove_result == LIST_SUCCESS);
+	ASSERT_TEST(listInsertAfterCurrent(NULL, "hi") == LIST_NULL_ARGUMENT);
+	listDestroy(list);
 	return true;
 }
+
 
 static bool testListSort() {
 	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
@@ -183,18 +250,39 @@ static bool testListSort() {
 	for (int i=0;i <5; ++i){
 		listInsertFirst(list,a[i]);
 	}
-	printList(list);
-	listSort(list, stringCmp);
-	printList(list);
+	ASSERT_TEST(listSort(list, NULL) == LIST_NULL_ARGUMENT);
+	ASSERT_TEST(listSort(NULL, stringCmp) == LIST_NULL_ARGUMENT);
+	ASSERT_TEST(listSort(NULL, NULL) == LIST_NULL_ARGUMENT);
+	char* str = listGetFirst(list);
+	str = listGetNext(list);
+	ASSERT_TEST(strcmp(str, "hello mister fish") == 0);
+	ListResult sort_result = listSort(list, stringCmp);
+	ASSERT_TEST(sort_result == LIST_SUCCESS);
+	str = listGetCurrent(list);
+	ASSERT_TEST(strcmp(str, "bbb") == 0);	
 	listDestroy(list);
 	return true;
 }
 
 static bool testListClear() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	ASSERT_TEST(listClear(list) == LIST_SUCCESS);
+	ASSERT_TEST(listGetSize(list) == 0);
+	listDestroy(list);
 	return true;
 }
 
 static bool testListDestroy() {
+	char* a[5] = {"aaa","bbb","NI","hello mister fish","I"};
+	List list = listCreate(copyString, freeString);
+	for (int i=0;i <5; ++i){
+		listInsertFirst(list,a[i]);
+	}
+	listDestroy(list);
 	return true;
 }
 
@@ -213,6 +301,7 @@ int main (int argv, char** arc){
 	RUN_TEST(testListSort);
 	RUN_TEST(testListClear);
 	RUN_TEST(testListDestroy);
+	printf("Done!\n");
 	return 0;
 }
 

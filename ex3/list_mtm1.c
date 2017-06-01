@@ -86,6 +86,9 @@ static NodeResult NodeInsertAfter(Node node, Node target) {
     return NODE_SUCCESS;
 }
 
+/* The function receives a node and a second one (target) to insert right before 
+   the first one. Returns NULL argument error if the first node is null, and 
+    success elsewise. We assume the target node is not NULL.  */
 static NodeResult NodeInsertBefore(Node current, Node target, Node head) {
     if(head == NULL) {
         return NODE_NULL_ARGUMENT;
@@ -98,6 +101,7 @@ static NodeResult NodeInsertBefore(Node current, Node target, Node head) {
     target -> next = current;
     return NODE_SUCCESS;
 }
+
 /* The function receives a node to copy, and returns a new copy of the node. */
 static Node CopyNode(Node node, CopyListElement copy_element) {
     if(node == NULL) {
@@ -197,11 +201,13 @@ ListElement listGetFirst(List list) {
     the element. If list is NULL, empty or the iterator is illegal or the last
     element we return NULL. It gets a list. */
 ListElement listGetNext(List list) {
-    if(list == NULL || list -> size == 0 || list -> list_iterator == NULL || 
-                                        list -> list_iterator -> next == NULL) {
+    if(list == NULL || list -> size == 0 || list -> list_iterator == NULL) {
         return NULL;
     }
     list -> list_iterator = list -> list_iterator -> next;
+    if(list -> list_iterator == NULL) {
+        return NULL;
+    }
     return(list -> list_iterator -> node_data);
 }
 
@@ -223,6 +229,9 @@ ListResult listInsertFirst(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
     }
+    if(element == NULL) {
+        return LIST_OUT_OF_MEMORY;
+    }
     Node to_insert = NodeCreate(element, list -> copy_function);
     if(to_insert == NULL) {
         return LIST_OUT_OF_MEMORY;
@@ -243,6 +252,9 @@ ListResult listInsertFirst(List list, ListElement element) {
 ListResult listInsertLast(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
+    }
+    if(element == NULL) {
+        return LIST_OUT_OF_MEMORY;
     }
     Node to_insert = NodeCreate(element, list -> copy_function);
     if(to_insert == NULL) {
@@ -266,6 +278,9 @@ ListResult listInsertLast(List list, ListElement element) {
 ListResult listInsertBeforeCurrent(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
+    }
+    if(element == NULL) {
+        return LIST_OUT_OF_MEMORY;
     }
     if(list -> list_iterator == NULL) {
         return LIST_INVALID_CURRENT;
@@ -292,6 +307,9 @@ ListResult listInsertBeforeCurrent(List list, ListElement element) {
 ListResult listInsertAfterCurrent(List list, ListElement element) {
     if(list == NULL) {
         return LIST_NULL_ARGUMENT;
+    }
+    if(element == NULL) {
+        return LIST_OUT_OF_MEMORY;
     }
     if(list -> list_iterator == NULL) {
         return LIST_INVALID_CURRENT;
@@ -415,7 +433,7 @@ ListResult listClear(List list) {
                                                     list -> free_function);
         assert(destroy_result == NODE_SUCCESS);
     }
-    list -> list_iterator = list -> list_head;
+    list -> list_iterator = NULL;
     list -> size = 0;
     return LIST_SUCCESS;
 }

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <malloc.h>
 /*to add to git:
-git add.
+git add .
 git commit -m "comment"
 git push -u origin [branch]
 */
@@ -155,6 +155,16 @@ bool checkPrime(int x, void* param) {
     return true;
 }
 
+// Function that prints the values of the list
+void printList(Node node) {
+    Node temp = node;
+    while(temp != NULL) {
+        printf("%d ", temp -> n);
+        temp = temp -> next;
+    }
+    printf("\n");
+}
+
 //Main according to what we were asked...
 int main() {
     Node head1 = createNode(1);
@@ -167,9 +177,11 @@ int main() {
     int p1 = 0;
     Node odd_node = concatLists(head1, head2, checkParity, (void *)&p1);
     Node prime_node = concatLists(head1, head2, checkPrime, NULL);
-    destroyList(head1);
-    destroyList(head2);
-    destroyList(odd_node);
-    destroyList(prime_node);
+    printList(odd_node);
+    printList(prime_node);
+    //destroyList(head1);
+    //destroyList(head2);
+    //destroyList(odd_node);
+    //destroyList(prime_node);
     return 0;
 }

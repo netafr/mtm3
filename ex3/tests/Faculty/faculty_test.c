@@ -9,27 +9,27 @@
 #include "../../mtm_ex3.h"
 
 static bool testFacultyCreate() {
-    faculty = FacultyCreate(CIVIL_ENGINEERING);
+    Faculty faculty = FacultyCreate(CIVIL_ENGINEERING);
     assert(FacultyGetName(faculty) == CIVIL_ENGINEERING);
     FacultyDestroy(faculty);
     return true;
 }
 static bool testFacultyDestroy() {
-    faculty = FacultyCreate(NULL);
+    Faculty faculty = FacultyCreate(CIVIL_ENGINEERING);
     FacultyDestroy(faculty);
     return true;
 }
 static bool testFacultyCompare() {
-    facultya = FacultyCreate(PHYSICS);
-    facultyb = FacultyCreate(MATHEMATICS);
+    Faculty facultya = FacultyCreate(PHYSICS);
+    Faculty facultyb = FacultyCreate(MATHEMATICS);
     ASSERT_TEST(FacultyCompare(facultya, facultyb) > 0);
     FacultyDestroy(facultya);
     FacultyDestroy(facultyb);
     return true;
 }
 static bool testFacultyProfitCompare() {
-    facultya = FacultyCreate(PHYSICS);
-    facultyb = FacultyCreate(MATHEMATICS);
+    Faculty facultya = FacultyCreate(PHYSICS);
+    Faculty facultyb = FacultyCreate(MATHEMATICS);
     FacultySetProfit(facultya, 100);
     FacultySetProfit(facultyb, 200);
     ASSERT_TEST(FacultyProfitCompare(facultya, facultyb) < 0);

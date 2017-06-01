@@ -3,7 +3,15 @@
 #include "set.h"
 #include "list.h"
 #include "mtm_ex3.h"
+#include "EscapeRoom.h"
 
-typedef struct escape_company_t EscapeCompany;
-
+typedef struct escape_company_t *EscapeCompany;
+EscapeCompany CompanyCreate (char* email);
+void CompanyDestroy (void* company);
+void* CompanyCopy (void* company);
+int CompanyCompare (void* company1, void* company2);
+char* CompanyGetEmail(EscapeCompany company);
+bool CompanyHasBookings(EscapeCompany company);
+bool CompanyRoomExists(EscapeCompany company, int id);
+MtmErrorCode CompanyInsertRoom(EscapeCompany company, EscapeRoom room);
 #endif
