@@ -90,9 +90,10 @@ int BookingGetHour(Booking booking) {
     return booking -> hour;
 }
 
-bool BookingUserBooking(Booking booking, char* email) {
+bool BookingUserBooking(Booking booking, char* email, int hour, int day) {
     assert(booking != NULL && email != NULL);
-    if(strcmp(booking -> user_email, email) == 0) {
+    if(strcmp(booking -> user_email, email) == 0 && hour == booking -> hour &&
+                                                    day == booking -> days) {
         return true;
     }
     return false;

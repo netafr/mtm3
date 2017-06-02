@@ -137,10 +137,11 @@ EscapeRoom CompanyGetRoom(EscapeCompany company, int id) {
     return NULL;
 }
 
-bool CompanyUserHasBookings(EscapeCompany company, char* email) {
+bool CompanyUserHasBookings(EscapeCompany company, char* email, int hour, 
+                                                                    int day) {
     assert(company != NULL && email != NULL);
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
-        if(RoomUserHasBookings(curr_room, email)) {
+        if(RoomUserHasBookings(curr_room, email, hour, day)) {
             return true;
         }
     }

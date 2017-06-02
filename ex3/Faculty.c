@@ -146,10 +146,10 @@ EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
     return NULL;
 }
 
-bool FacultyUserHasBookings(Faculty faculty, char* email) {
+bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day) {
     assert(faculty != NULL && email != NULL);
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
-        if(CompanyUserHasBookings(curr_company, email)) {
+        if(CompanyUserHasBookings(curr_company, email, hour, day)) {
             return true;
         }
     }

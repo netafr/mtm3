@@ -99,10 +99,10 @@ int RoomGetPrice(EscapeRoom room) {
     return room -> price_for_person;
 }
 
-bool RoomUserHasBookings(EscapeRoom room, char *email) {
+bool RoomUserHasBookings(EscapeRoom room, char *email, int hour, int day) {
     assert(room != NULL && email != NULL);
     LIST_FOREACH(Booking, curr_booking, room -> bookings) {
-        if(BookingUserBooking(curr_booking, email)) {
+        if(BookingUserBooking(curr_booking, email, hour, day)) {
             return true;
         }
     }
@@ -123,4 +123,13 @@ bool RoomAvailable(EscapeRoom room, int day, int hour) {
         }
     }
     return true;
+}
+
+MtmErrorCode RoomAddBooking(EscapeRoom room, Booking booking) {
+    assert(room != NULL && booking != NULL);
+    ListResult insert_result = listInsertLast(room -> bookings, (void*)booking);
+    if(insert_result == LIST_OUT_OF_MEMORY) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    return MTM_SUCCESS;
 }

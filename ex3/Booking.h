@@ -12,5 +12,5 @@ void BookingDestroy(void* booking);
 void* BookingCopy(void* booking);
 int BookingGetDays(Booking booking);
 int BookingGetHour(Booking booking);
-bool BookingUserBooking(Booking booking, char* email);
+bool BookingUserBooking(Booking booking, char* email, int day, int hour);
 #endif

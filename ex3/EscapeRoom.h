@@ -1,6 +1,7 @@
 #ifndef ESCAPE_ROOM_H
 #define ESCAPE_ROOM_H
 #include "set.h"
+#include "Booking.h"
 #include "list.h"
 
 typedef struct escape_room_t *EscapeRoom;
@@ -11,6 +12,7 @@ void* RoomCopy(void* room);
 bool RoomHasBookings(EscapeRoom room);
 int RoomGetId(EscapeRoom room);
 int RoomGetPrice(EscapeRoom room);
-bool RoomUserHasBookings(EscapeRoom room, char *email);
+bool RoomUserHasBookings(EscapeRoom room, char *email, int hour, int day);
 bool RoomAvailable(EscapeRoom room, int day, int hour);
+MtmErrorCode RoomAddBooking(EscapeRoom room, Booking booking);
 #endif

@@ -4,6 +4,7 @@
 #include "set.h"
 #include "User.h"
 #include "Faculty.h"
+#include "Booking.h"
 #include "Utils.h"
 #include <malloc.h>
 #include <string.h>
@@ -99,11 +100,14 @@ static EscapeRoom GetRoom(EscapeTechnion escape_system, int id, TechnionFaculty
     return NULL;
 }
 
-/* */
-bool UserHasBookings(EscapeTechnion escape_system, char* email) {
+/* This function gets escape_system, char* email int hour and int day and return
+    whether the user has a booking in the same day and hour. */
+bool UserHasBookings(EscapeTechnion escape_system, char* email, int hour, 
+                                                                int day) {
     assert(escape_system != NULL && email != NULL);
     for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
-        if(FacultyUserHasBookings(escape_system -> faculties[i], email)) {
+        if(FacultyUserHasBookings(escape_system -> faculties[i], email, hour,
+                                                                        day)) {
             return true;
         }
     }
@@ -312,28 +316,53 @@ MtmErrorCode SystemRemoveUser(EscapeTechnion escape_system, char* email) {
     return MTM_SUCCESS;
 }
 
-MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* email, 
+/* This function is called when we want to create a booking for an user at a
+    given room, according to the given date and number of people. It gets 
+    escape_system, char* user_email, TechnionFaculty faculty, int id (of room),
+    char* time and int num_ppl. If escape_system or user_email are NULL or one
+    of the parameters isn't in legal range or format we return MTM_INVALID_
+    PARMETER, if a user with the given email doesn't exist we return MTM_CLIENT_
+    EMAIL_DOES_NOT_EXIST, if a room with the given id doesn't exist, we return
+    MTM_ID_DOES_NOT_EXIST, if the user already has a booking in the given time
+    we return MTM_CLIENT_IN_ROOM, if there is already a booking for the given
+    time in the wanted room we return MTM_ROOM_NOT_AVAILABLE, if there is a 
+    memory problem we return MTM_OUT_OF_MEMORY, otherwise we return MTM_SUCCESS.
+    */
+MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email, 
                 TechnionFaculty faculty, int id, char* time, int num_ppl) {
-    if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email, 
-            '@') != 1 || id < 1 || num_ppl < 1 || !CheckLegalDayTime(time)) {
+    if(escape_system == NULL || user_email == NULL || StringOccurencesOfChar
+    (user_email, '@') != 1 || id < 1 || num_ppl < 1 || !CheckLegalDayTime(time))
+                                                                            {
         return MTM_INVALID_PARAMETER;
     }
-    User user = GetUser(escape_system, email);
+    User user = GetUser(escape_system, user_email);
     if(user == NULL) {
         return MTM_CLIENT_EMAIL_DOES_NOT_EXIST;
     }
-    EscapeRoom room = GetRoom(escape_system, id, faculty, NULL);
+    EscapeCompany company;
+    EscapeRoom room = GetRoom(escape_system, id, faculty, company);
     if(room == NULL) {
         return MTM_ID_DOES_NOT_EXIST;
     }
-    if(UserHasBookings(escape_system, email)) {
-        return MTM_CLIENT_IN_ROOM;
-    }
     int day, hour;
     GetTimes(time, &day, &hour);
+    if(UserHasBookings(escape_system, user_email, hour, day)) {
+        return MTM_CLIENT_IN_ROOM;
+    }
      if(!RoomAvailable(room, day, hour)) {
         return MTM_ROOM_NOT_AVAILABLE;
     }
-    Booking booking = BookingCreate(day, hour, RoomGetPrice(room) * num_ppl, 
-                                        num_ppl, email, , faculty)
+    int price;
+    if(faculty == UserGetFaculty(user)) {
+        price =  (3*(RoomGetPrice(room) / 4)) * num_ppl;
+    } else {
+         price = RoomGetPrice(room) * num_ppl;
+    }
+    Booking booking = BookingCreate(day, hour, price, num_ppl, user_email, 
+                                            CompanyGetEmail(company), faculty);
+    if(booking == NULL) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    MtmErrorCode insert_result = RoomAddBooking(room, booking);
+    return insert_result;
 }

@@ -20,5 +20,5 @@ MtmErrorCode FacultyInsertCompany(Faculty faculty, EscapeCompany company);
 EscapeCompany FacultyGetCompany(Faculty faculty, char* email);
 MtmErrorCode FacultyRemoveCompany(Faculty faculty, EscapeCompany company);
 EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company);
-bool FacultyUserHasBookings(Faculty faculty, char* email);
+bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day);
 #endif
