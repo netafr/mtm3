@@ -91,3 +91,36 @@ int RoomGetId(EscapeRoom room) {
     }
     return room -> id;
 }
+
+int RoomGetPrice(EscapeRoom room) {
+    if(room == NULL) {
+        return -1;
+    }
+    return room -> price_for_person;
+}
+
+bool RoomUserHasBookings(EscapeRoom room, char *email) {
+    assert(room != NULL && email != NULL);
+    LIST_FOREACH(Booking, curr_booking, room -> bookings) {
+        if(BookingUserBooking(curr_booking, email)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool RoomAvailable(EscapeRoom room, int day, int hour) {
+    assert(room != NULL);
+    int opening, closing;
+    GetTimes(room -> working_hours, &opening, &closing);
+    if(hour < opening || hour >= closing) {
+        return false;
+    }
+    LIST_FOREACH(Booking, curr_booking, room -> bookings) {
+        if(BookingGetDays(curr_booking) == day && BookingGetHour(curr_booking) 
+                                                                    == hour) {
+            return false;                                                            
+        }
+    }
+    return true;
+}

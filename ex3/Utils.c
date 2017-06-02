@@ -27,19 +27,39 @@ char* StrDuplicate(char* str) {
     return new_str;
 }
 
+/* This function gets char* str and 2 pointers to ints, and puts in each of them
+    the 2 parts of the str, seperated by '-'. */
+void GetTimes(char* str, int* first, int* second) {
+    assert(str != NULL && first != NULL && second != NULL);
+    char* split = strtok(str, "-");
+    *(first) = atol(split);
+    split = strtok(NULL, "-");
+    *(second) = atol(split);
+}
+
 /* This function gets char* working_hours and returns whether its in the right
     and legal format of working_hours as described. */
 bool CheckLegalHours(char* working_hours) {
     if(working_hours == NULL) {
         return false;
     }
-    char* str = strtok(working_hours, "-");
-    int opening = atol(str);
-    str = strtok(NULL, "-");
-    int closing = atol(str);
+    int opening, closing;
+    GetTimes(working_hours, &opening, &closing);
     if(opening < 0 || opening > 24 || closing < 0 || closing > 24 || 
                                                         opening >= closing) {
         return false;                                                    
+    }
+    return true;
+}
+
+/* This function gets char* time and returns wheter its in the right and legal
+    format of time as described. */
+bool CheckLegalDayTime(char* time) {
+    assert(time != NULL);
+    int day, hour;
+    GetTimes(time, &day, &hour);
+    if(day < 0 || hour < 0 || hour > 23) {
+        return false;
     }
     return true;
 }

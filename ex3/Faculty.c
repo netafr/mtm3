@@ -105,7 +105,6 @@ MtmErrorCode FacultyInsertCompany(Faculty faculty, EscapeCompany company) {
 
 EscapeCompany FacultyGetCompany(Faculty faculty, char* email) {
     assert(faculty != NULL && email != NULL);
-    EscapeCompany curr_company;
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
         if(strcmp(CompanyGetEmail(curr_company), email) == 0) {
             return curr_company;
@@ -121,4 +120,38 @@ MtmErrorCode FacultyRemoveCompany(Faculty faculty, EscapeCompany company) {
         return MTM_INVALID_PARAMETER;
     }
     return MTM_SUCCESS;
+}
+
+EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
+    assert(faculty != NULL && id > 0);
+    EscapeRoom room;
+    SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
+        if(CompanyRoomExists(curr_company, id)) {
+            room = CompanyGetRoom(curr_company, id);
+            if(room == NULL) {
+                if(company != NULL) {
+                    company = NULL;
+                }
+                return NULL;
+            }
+            if(company != NULL) {
+                    company = curr_company;
+            }
+            return room;
+        }
+    }
+    if(company != NULL) {
+        company = NULL;
+    }
+    return NULL;
+}
+
+bool FacultyUserHasBookings(Faculty faculty, char* email) {
+    assert(faculty != NULL && email != NULL);
+    SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
+        if(CompanyUserHasBookings(curr_company, email)) {
+            return true;
+        }
+    }
+    return false;
 }

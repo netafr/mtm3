@@ -84,7 +84,6 @@ bool CompanyHasBookings(EscapeCompany company) {
     if(company == NULL) {
         return false;
     }
-    EscapeRoom curr_room;
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(RoomHasBookings(curr_room)) {
             return true;
@@ -95,7 +94,6 @@ bool CompanyHasBookings(EscapeCompany company) {
 
 bool CompanyRoomExists(EscapeCompany company, int id) {
     assert(company != NULL && id > 0);
-    EscapeRoom curr_room;
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(RoomGetId(curr_room) == id) {
             return true;
@@ -112,4 +110,39 @@ MtmErrorCode CompanyInsertRoom(EscapeCompany company, EscapeRoom room) {
         return MTM_OUT_OF_MEMORY;
     }
     return MTM_SUCCESS;
+}
+
+MtmErrorCode CompanyRemoveRoom(EscapeCompany company, EscapeRoom room) {
+    assert(company != NULL && room != NULL);
+    LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
+        if(curr_room == room) {//Both are pointers, check if they point on same.
+            ListResult remove_result = listRemoveCurrent(company -> 
+                                                                company_rooms);
+            if(remove_result == LIST_INVALID_CURRENT) {
+                return MTM_OUT_OF_MEMORY;
+            }
+            return MTM_SUCCESS;
+        }
+    }
+    return MTM_SUCCESS;
+}
+
+EscapeRoom CompanyGetRoom(EscapeCompany company, int id) {
+    assert(company != NULL && id > 0);
+    LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
+        if(RoomGetId(curr_room) == id) {
+            return curr_room;
+        }
+    }
+    return NULL;
+}
+
+bool CompanyUserHasBookings(EscapeCompany company, char* email) {
+    assert(company != NULL && email != NULL);
+    LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
+        if(RoomUserHasBookings(curr_room, email)) {
+            return true;
+        }
+    }
+    return false;
 }

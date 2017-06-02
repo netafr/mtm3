@@ -26,6 +26,17 @@ static void ClearFaculties(EscapeTechnion escape_system, int num_to_clear) {
     }
 }
 
+/* Helper function that gets escape_system and char* email and returns a pointer
+    to the user with the given email. If doesn't exist we return NULL. */
+static User GetUser(EscapeTechnion escape_system, char* email) {
+    assert(escape_system != NULL && email != NULL);
+    SET_FOREACH(User, curr_user, escape_system -> users) {
+        if(strcmp(UserGetEmail(curr_user), email) == 0) {
+            return curr_user;
+        }
+    }
+    return NULL;
+}
 /* Helper function that gets escape_system and char* email and returns whether
     or not exists a company with the given email. */
 static bool CompanyMailExists(EscapeTechnion escape_system, char* email) {
@@ -41,7 +52,7 @@ static bool CompanyMailExists(EscapeTechnion escape_system, char* email) {
     or not the mail already exists anywhere in the system. */
 static bool MailExists(EscapeTechnion escape_system, char* email) {
     assert(escape_system != NULL && email != NULL);
-    if(setIsIn(escape_system -> users, email)) {
+    if(setIsIn(escape_system -> users, (void*)GetUser(escape_system, email))) {
         return true;
     }
     return CompanyMailExists(escape_system, email);
@@ -70,6 +81,33 @@ static bool RoomIdExists(EscapeTechnion escape_system, int id, char* email) {
     assert(escape_system != NULL && id > 0 && email != NULL);
     EscapeCompany wanted_company = GetCompany(escape_system, email, NULL);
     return CompanyRoomExists(wanted_company, id);
+}
+
+/* Helper function that gets escape_system, int id, TechnionFaculty faculty and
+   EscapeCompany company, and returns pointer to the room in the given faculty 
+   with the given id, if there is an error for some reason we return NULL.
+   company is optional, if given it will store the pointer to the room's company
+   */
+static EscapeRoom GetRoom(EscapeTechnion escape_system, int id, TechnionFaculty 
+                                            faculty ,EscapeCompany company) {
+    assert(escape_system != NULL);
+    EscapeRoom room;
+    room = FacultyGetRoom(escape_system -> faculties[faculty], id, company);
+    if(room != NULL) {
+        return room;
+    }
+    return NULL;
+}
+
+/* */
+bool UserHasBookings(EscapeTechnion escape_system, char* email) {
+    assert(escape_system != NULL && email != NULL);
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        if(FacultyUserHasBookings(escape_system -> faculties[i], email)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /* This function creates the system upon initializtion, when the program is 
@@ -135,6 +173,7 @@ MtmErrorCode SystemAddCompany(EscapeTechnion escape_system, char* email,
             }
             MtmErrorCode insert_result = FacultyInsertCompany(escape_system -> 
                                                         faculties[i], company);
+            CompanyDestroy(company); //Set creates copy so we free the original.
             if(insert_result != MTM_SUCCESS) {
                 return insert_result;
             }
@@ -170,13 +209,13 @@ MtmErrorCode SystemRemoveCompany(EscapeTechnion escape_system, char* email) {
     return remove_result;
 }
 
-/* This function is called when we want to add company to the system. It gets
+/* This function is called when we want to add room to the system. It gets
     escape_system, char* email, int id, int price, int num_ppl, char* working_
     hours and int difficulty. If one of the parameters is illegal (ints are out 
     of range or strings arent in right format or NULL) we return MTM_INVALD_
     PARAMETER, if company with the given mail doesn't exist we return 
     MTM_COMPANY_EMAIL_DOES_NOT_EXIST, if a room with the given ID already exists
-    we return MTM_ID_ALREADY_EXISTS, otherwise returns the result of the company
+    we return MTM_ID_ALREADY_EXISTS, otherwise returns the result of the room
     insert function. */
 MtmErrorCode SystemAddRoom(EscapeTechnion escape_system, char* email, int id, 
                 int price, int num_ppl, char* working_hours, int difficulty) {
@@ -195,5 +234,106 @@ MtmErrorCode SystemAddRoom(EscapeTechnion escape_system, char* email, int id,
     EscapeRoom room_to_add = RoomCreate(id, price, num_ppl, working_hours,
                                                                     difficulty);
     MtmErrorCode insert_result = CompanyInsertRoom(room_company, room_to_add);
+    RoomDestroy(room_to_add); //List adds a copy so we free the original.
     return insert_result;
+}
+
+/* This function is called when we want to remove room from the system. It gets
+    escape_system, TechnionFaculty faculty and int id. If escapse_system is NULL
+    or id or faculty are out of range, we return MTM_INVALID_PARAMETER, if room
+    with the given id doesn't exists we return MTM_ID_DOES_NOT_EXIST, if the 
+    room to remove has bookings we return MTM_RESERVATION_EXIST, otherwise we
+    return the result of the CompanyRemoveRoom function. */
+MtmErrorCode SystemRemoveRoom(EscapeTechnion escape_system, TechnionFaculty 
+                        faculty, int id) {
+    if(escape_system == NULL || id < 1 || faculty < CIVIL_ENGINEERING || faculty
+                                                                    > UNKNOWN){
+        return MTM_INVALID_PARAMETER;
+    }
+    EscapeCompany room_company;
+    EscapeRoom wanted_room = GetRoom(escape_system, id, faculty, room_company);
+    if(wanted_room == NULL) {
+        return MTM_ID_DOES_NOT_EXIST;
+    }
+    if(RoomHasBookings(wanted_room)) {
+        return MTM_RESERVATION_EXISTS;
+    }
+    MtmErrorCode remove_result = CompanyRemoveRoom(room_company, wanted_room);
+    return remove_result;
+}
+
+/* This function is called when we want to add new user to the system. It gets
+    escape_system, char* email, TechnionFaculty faculty and int skill_level. If
+    escape_system or email are NULL, or email, faculty and skill_level are 
+    illegal we return MTM_INVALID_PARAMETER, if something with the given email
+    already exists in the system we return MTM_EMAIL_ALREADY_EXISTS, if user 
+    creation or copy fails we return MTM_OUT_OF_MEMORY, otherwise we return
+    MTM_SUCCESS. */
+MtmErrorCode SystemAddUser(EscapeTechnion escape_system, char* email, 
+                                TechnionFaculty faculty , int skill_level) {
+    if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email, 
+            '@') != 1 || faculty < CIVIL_ENGINEERING || faculty > UNKNOWN || 
+                                        skill_level < 1 || skill_level > 10){
+        return MTM_INVALID_PARAMETER;                                
+    }
+    if(MailExists(escape_system, email)) {
+        return MTM_EMAIL_ALREADY_EXISTS;
+    }
+    User user = UserCreate(email, skill_level, faculty);
+    if(user == NULL) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    SetResult insert_result = setAdd(escape_system -> users, (void*)user);
+    UserDestroy(user); //Set adds a copy so we clean the original.
+    if(insert_result != SET_SUCCESS) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    return MTM_SUCCESS;
+}
+
+/* This function is called when we want to remove user from the system. It gets
+    escape_system and char* email. If escape system or email are NULL or email
+    is illegal we return MTM_INVALID_PARAMETER, if the user doesn't exist we 
+    return MTM_CLIENT_EMAIL_DOES_NOT_EXIST, if setRemove fails we return MTM_
+    OUT_OF_MEMORY, otherwise we return MTM_SUCCESS. */
+MtmErrorCode SystemRemoveUser(EscapeTechnion escape_system, char* email) {
+    if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email,
+                                                                '@' != 1)) {
+        return MTM_INVALID_PARAMETER;
+    }
+    User user = GetUser(escape_system, email);
+    if(user == NULL) {
+        return MTM_CLIENT_EMAIL_DOES_NOT_EXIST;
+    }
+    SetResult remove_result = setRemove(escape_system -> users, (void*)user);
+    if(remove_result != SET_SUCCESS) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    return MTM_SUCCESS;
+}
+
+MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* email, 
+                TechnionFaculty faculty, int id, char* time, int num_ppl) {
+    if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email, 
+            '@') != 1 || id < 1 || num_ppl < 1 || !CheckLegalDayTime(time)) {
+        return MTM_INVALID_PARAMETER;
+    }
+    User user = GetUser(escape_system, email);
+    if(user == NULL) {
+        return MTM_CLIENT_EMAIL_DOES_NOT_EXIST;
+    }
+    EscapeRoom room = GetRoom(escape_system, id, faculty, NULL);
+    if(room == NULL) {
+        return MTM_ID_DOES_NOT_EXIST;
+    }
+    if(UserHasBookings(escape_system, email)) {
+        return MTM_CLIENT_IN_ROOM;
+    }
+    int day, hour;
+    GetTimes(time, &day, &hour);
+     if(!RoomAvailable(room, day, hour)) {
+        return MTM_ROOM_NOT_AVAILABLE;
+    }
+    Booking booking = BookingCreate(day, hour, RoomGetPrice(room) * num_ppl, 
+                                        num_ppl, email, , faculty)
 }

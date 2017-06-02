@@ -14,4 +14,7 @@ char* CompanyGetEmail(EscapeCompany company);
 bool CompanyHasBookings(EscapeCompany company);
 bool CompanyRoomExists(EscapeCompany company, int id);
 MtmErrorCode CompanyInsertRoom(EscapeCompany company, EscapeRoom room);
+MtmErrorCode CompanyRemoveRoom(EscapeCompany company, EscapeRoom room);
+EscapeRoom CompanyGetRoom(EscapeCompany company, int id);
+bool CompanyUserHasBookings(EscapeCompany company, char* email);
 #endif

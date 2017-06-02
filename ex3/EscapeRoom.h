@@ -10,4 +10,7 @@ void RoomDestroy(void* room);
 void* RoomCopy(void* room);
 bool RoomHasBookings(EscapeRoom room);
 int RoomGetId(EscapeRoom room);
+int RoomGetPrice(EscapeRoom room);
+bool RoomUserHasBookings(EscapeRoom room, char *email);
+bool RoomAvailable(EscapeRoom room, int day, int hour);
 #endif

@@ -75,3 +75,25 @@ void* BookingCopy(void* booking) {
     }
     return (void*)new_booking;
 }
+
+int BookingGetDays(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> days;
+}
+
+int BookingGetHour(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> hour;
+}
+
+bool BookingUserBooking(Booking booking, char* email) {
+    assert(booking != NULL && email != NULL);
+    if(strcmp(booking -> user_email, email) == 0) {
+        return true;
+    }
+    return false;
+}
