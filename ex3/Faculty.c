@@ -155,3 +155,45 @@ bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day) {
     }
     return false;
 }
+
+bool FacultyHasRooms(Faculty faculty) {
+    if(faculty == NULL) {
+        return false;
+    }
+    int count = 0;
+    SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
+        if(!CompanyHasRooms(curr_company)) {
+            count++;
+        }
+    }
+    if(count == setGetSize(faculty -> companies)) {
+        return false;
+    }
+    return true;
+}
+
+EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl, 
+                                                                int* score) {
+    if(faculty == NULL) {
+        return NULL;
+    }
+    int minScore, minId, tempScore, tempId;
+    EscapeRoom minRoom = CompanyGetRecommendedRoom(setGetFirst(faculty -> 
+                                companies), level, num_ppl, &minId, &minScore);
+    EscapeRoom tempRoom;
+    SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
+        tempRoom = CompanyGetRecommendedRoom(curr_company, level, num_ppl, 
+                                                        &tempId, &tempScore);
+        if(tempScore < minScore) {
+            minScore = tempScore;
+            minId = tempId;
+            minRoom = tempRoom;
+        } else if(tempScore == minScore && tempId < minId) {
+            minScore = tempScore;
+            minId = tempId;
+            minRoom = tempRoom;
+        }
+    }
+    *(score) = minScore;
+    return minRoom;
+}

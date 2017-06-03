@@ -21,4 +21,7 @@ EscapeCompany FacultyGetCompany(Faculty faculty, char* email);
 MtmErrorCode FacultyRemoveCompany(Faculty faculty, EscapeCompany company);
 EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company);
 bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day);
+bool FacultyHasRooms(Faculty faculty);
+EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl, 
+                                                                int* score);
 #endif

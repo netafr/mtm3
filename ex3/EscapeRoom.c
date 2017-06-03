@@ -4,6 +4,7 @@
 #include "Booking.h"
 #include <malloc.h>
 #include <assert.h>
+#include <math.h>
 
 struct escape_room_t {
     int id;
@@ -132,4 +133,29 @@ MtmErrorCode RoomAddBooking(EscapeRoom room, Booking booking) {
         return MTM_OUT_OF_MEMORY;
     }
     return MTM_SUCCESS;
+}
+
+int RoomGetScore(EscapeRoom room, int level, int num_ppl) {
+    if(room == NULL) {
+        return -1;
+    }
+    return sqrt(pow(room -> recommended_num_person - num_ppl, 2) + pow(room -> 
+                                                        difficulty - level, 2));
+}
+
+char* RoomGetClosestAvailable(EscapeRoom room) {
+    if(room == NULL) {
+        return NULL;
+    }
+    int day = 0, hour = 0;
+    while(!RoomAvailable(room, day, hour)) {
+        if(hour == 23) {
+            day++;
+            hour = 0;
+        } else {
+            hour++;
+        }
+    }
+    char* time = CreateString(hour, day);
+    return time;
 }

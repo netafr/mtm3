@@ -2,6 +2,7 @@
 #define UTILS_H
 #include <malloc.h>
 #include <string.h>
+#include <stdlib.h>
 
 int StringOccurencesOfChar(char* string, char look_for);
 char* StrDuplicate(char* str);

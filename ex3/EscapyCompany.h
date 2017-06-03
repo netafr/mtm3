@@ -18,4 +18,7 @@ MtmErrorCode CompanyRemoveRoom(EscapeCompany company, EscapeRoom room);
 EscapeRoom CompanyGetRoom(EscapeCompany company, int id);
 bool CompanyUserHasBookings(EscapeCompany company, char* email, int hour, 
                                                                     int day);
+bool CompanyHasRooms(EscapeCompany company);
+EscapeRoom CompanyGetRecommendedRoom(EscapeCompany company, int level, int
+                                                num_ppl, int* id, int* score);
 #endif

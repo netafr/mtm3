@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include <math.h>
 
 /* This function gets char* str and char look_for and returns the number of
     occurences of look_for in str. */
@@ -32,9 +33,9 @@ char* StrDuplicate(char* str) {
 void GetTimes(char* str, int* first, int* second) {
     assert(str != NULL && first != NULL && second != NULL);
     char* split = strtok(str, "-");
-    *(first) = atol(split);
+    *(first) = atoi(split);
     split = strtok(NULL, "-");
-    *(second) = atol(split);
+    *(second) = atoi(split);
 }
 
 /* This function gets char* working_hours and returns whether its in the right
@@ -63,3 +64,27 @@ bool CheckLegalDayTime(char* time) {
     }
     return true;
 }
+
+char* CreateString(int x, int y) {
+    int x_len, y_len;
+    if(x == 0) {
+        x_len = 1;
+    } else {
+        x_len = floor(log10(abs(x))) + 1;
+    }
+    if(y == 0) {
+        y_len = 1;
+    } else {
+        y_len = floor(log10(abs(y))) + 1;
+    }
+    char* str = malloc(x_len + y_len + 2); //1 for "/0" and one for "-".
+    if(str == NULL) {
+        return NULL;
+    }
+    for(int i = 0; i < strlen(str); ++i) {
+        if(i < x_len) {
+            
+        }
+    }
+}
+

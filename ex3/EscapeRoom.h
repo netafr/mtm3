@@ -15,4 +15,6 @@ int RoomGetPrice(EscapeRoom room);
 bool RoomUserHasBookings(EscapeRoom room, char *email, int hour, int day);
 bool RoomAvailable(EscapeRoom room, int day, int hour);
 MtmErrorCode RoomAddBooking(EscapeRoom room, Booking booking);
+int RoomGetScore(EscapeRoom room, int level, int num_ppl);
+char* RoomGetClosestAvailable(EscapeRoom room);
 #endif

@@ -147,3 +147,40 @@ bool CompanyUserHasBookings(EscapeCompany company, char* email, int hour,
     }
     return false;
 }
+
+bool CompanyHasRooms(EscapeCompany company) {
+    if(company == NULL) {
+        return false;
+    }
+    if(listGetSize(company -> company_rooms) < 1) {
+        return false;
+    }
+    return true;
+}
+
+EscapeRoom CompanyGetRecommendedRoom(EscapeCompany company, int level, int
+                                                num_ppl, int* id, int* score) {
+    if(company == NULL) {
+        return NULL;
+    }
+    EscapeRoom minRoom = listGetFirst(company -> company_rooms);
+    int minScore = RoomGetScore(minRoom, level, num_ppl);
+    int minId = RoomGetId(minRoom);
+    int tempScore, tempId;
+    LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
+        tempScore = RoomGetScore(curr_room, level, num_ppl);
+        tempId = RoomGetId(curr_room);
+        if(tempScore < minScore) {
+            minScore = tempScore;
+            minId = tempId;
+            minRoom = curr_room;
+        } else if(tempScore == minScore && tempId < minId) {
+            minScore = tempScore;
+            minId = tempId;
+            minRoom = curr_room;
+        }
+    }
+    *(id) = minId;
+    *(score) = minScore;
+    return minRoom;
+}

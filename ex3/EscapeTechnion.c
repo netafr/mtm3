@@ -8,6 +8,7 @@
 #include "Utils.h"
 #include <malloc.h>
 #include <string.h>
+#include <math.h>
 
 struct escape_technion_t {
     int num_of_faculties;
@@ -102,7 +103,7 @@ static EscapeRoom GetRoom(EscapeTechnion escape_system, int id, TechnionFaculty
 
 /* This function gets escape_system, char* email int hour and int day and return
     whether the user has a booking in the same day and hour. */
-bool UserHasBookings(EscapeTechnion escape_system, char* email, int hour, 
+static bool UserHasBookings(EscapeTechnion escape_system, char* email, int hour, 
                                                                 int day) {
     assert(escape_system != NULL && email != NULL);
     for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
@@ -114,6 +115,52 @@ bool UserHasBookings(EscapeTechnion escape_system, char* email, int hour,
     return false;
 }
 
+/* This function gets escape_system and returns wheteher exists at least one 
+    room in the system. */
+static bool SystemHasRooms(EscapeTechnion escape_system) {
+    assert(escape_system != NULL);
+    int count = 0;
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        if(!FacultyHasRooms(escape_system -> faculties[i])) {
+            count++;
+        }
+    }
+    if(count == escape_system -> num_of_faculties) {
+        return false;
+    }
+    return true;
+}
+
+/* This function gets escape_system, int level, TechnionFaculty faculty and int
+    num_ppl and returns the recommended room by the given condition and the 
+    parameters level and num_ppl. */
+static EscapeRoom GetRecommendedRoom(EscapeTechnion escape_system, int level, 
+                                        TechnionFaculty faculty, int num_ppl) {
+    assert(escape_system != NULL);
+    int tempScore, minScore, minFaculty = 0;
+    EscapeRoom tempRoom, minRoom = FacultyGetRecommenedRoom(escape_system -> 
+                                    faculties[0], level, num_ppl, &minScore);
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        tempRoom = FacultyGetRecommenedRoom(escape_system -> faculties[i], level
+                                                        , num_ppl, &tempScore);
+        if(tempScore < minScore) {
+            minScore = tempScore;
+            minRoom = tempRoom;
+            minFaculty = i;
+        } else if(tempScore == minScore && fabs(i - faculty) < fabs(minFaculty - 
+                                                                    faculty)) {
+            minScore = tempScore;
+            minRoom = tempRoom;
+            minFaculty = i;
+        } else if(tempScore == minScore && fabs(i - faculty) == fabs(minFaculty 
+                                            - faculty) && i < minFaculty) {
+            minScore = tempScore;
+            minRoom = tempRoom;
+            minFaculty = i;                    
+        }
+    }
+    return minRoom;
+}
 /* This function creates the system upon initializtion, when the program is 
     called. Its mallocs and creates the faculties array and the users set. 
     It initliazes all the faculties. If there is a memory problem it returns
@@ -365,4 +412,35 @@ MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email,
     }
     MtmErrorCode insert_result = RoomAddBooking(room, booking);
     return insert_result;
+}
+
+
+MtmErrorCode SystemRecommendedRoom(EscapeTechnion escape_system, char* email, 
+                                                            int num_ppl) {
+    if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email,
+                                                    '@') != 1 || num_ppl < 1){
+        return MTM_INVALID_PARAMETER;    
+    }                                
+    User user = GetUser(escape_system, email);
+    if(user == NULL) {
+        return MTM_CLIENT_EMAIL_DOES_NOT_EXIST;
+    }
+    if(!SystemHasRooms(escape_system)) {
+        return MTM_NO_ROOMS_AVAILABLE;
+    }
+    EscapeRoom room = GetRecommendedRoom(escape_system, UserGetLevel(user), 
+                                                UserGetFaculty(user), num_ppl);
+    assert(room != NULL);
+    char* time;
+    do {
+        time = RoomGetClosestAvailable(room);
+        if(time == NULL) {
+            return MTM_OUT_OF_MEMORY;
+        }
+        int day, hour;
+        GetTimes(time, &day, &hour);
+    } while(UserHasBookings(escape_system, email, hour, day)); 
+    MtmErrorCode add_result = SystemAddOrder(escape_system, email, 
+        UserGetFaculty(user), RoomGetId(room), time, num_ppl);
+    return add_result;
 }
