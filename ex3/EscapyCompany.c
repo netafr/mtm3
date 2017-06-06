@@ -11,6 +11,9 @@ struct escape_company_t {
 };
 
 EscapeCompany CompanyCreate (char* email) {
+    if(email == NULL) {
+        return NULL;
+    }
     EscapeCompany company = malloc(sizeof(*company));
     if(company == NULL) {
         return NULL;
@@ -93,7 +96,9 @@ bool CompanyHasBookings(EscapeCompany company) {
 }
 
 bool CompanyRoomExists(EscapeCompany company, int id) {
-    assert(company != NULL && id > 0);
+    if(company == NULL || id <= 0) {
+        return false;
+    }
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(RoomGetId(curr_room) == id) {
             return true;
@@ -102,33 +107,49 @@ bool CompanyRoomExists(EscapeCompany company, int id) {
     return false;
 }
 
-MtmErrorCode CompanyInsertRoom(EscapeCompany company, EscapeRoom room) {
-    assert(company != NULL && room != NULL);
+
+CompanyErr CompanyInsertRoom(EscapeCompany company, EscapeRoom room) {
+    if(company == NULL || room == NULL) {
+        return COMPANY_INVALID_PARAMETER;
+    }
     ListResult insert_result = listInsertLast(company -> company_rooms, 
                                                                 (void*)room);
     if(insert_result == LIST_OUT_OF_MEMORY) {
-        return MTM_OUT_OF_MEMORY;
+        return COMPANY_OUT_OF_MEMORY;
+    } else if(insert_result == LIST_NULL_ARGUMENT) {
+        return COMPANY_INVALID_PARAMETER;  
     }
-    return MTM_SUCCESS;
+    ListResult sort_result = listSort(company -> company_rooms, RoomCompare);
+    if(sort_result == LIST_OUT_OF_MEMORY) {
+        return COMPANY_OUT_OF_MEMORY;
+    } else if(sort_result == LIST_NULL_ARGUMENT) {
+        return COMPANY_INVALID_PARAMETER;
+    }
+    return COMPANY_SUCCESS;
 }
 
-MtmErrorCode CompanyRemoveRoom(EscapeCompany company, EscapeRoom room) {
-    assert(company != NULL && room != NULL);
+CompanyErr CompanyRemoveRoom(EscapeCompany company, EscapeRoom room) {
+    if(company == NULL || room == NULL) {
+        return COMPANY_INVALID_PARAMETER;
+    }
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(curr_room == room) {//Both are pointers, check if they point on same.
             ListResult remove_result = listRemoveCurrent(company -> 
                                                                 company_rooms);
-            if(remove_result == LIST_INVALID_CURRENT) {
-                return MTM_OUT_OF_MEMORY;
+            if(remove_result == LIST_INVALID_CURRENT || remove_result == 
+                                                        LIST_NULL_ARGUMENT) {
+                return COMPANY_INVALID_PARAMETER;
             }
-            return MTM_SUCCESS;
+            return COMPANY_SUCCESS;
         }
     }
-    return MTM_SUCCESS;
+    return COMPANY_SUCCESS;
 }
 
 EscapeRoom CompanyGetRoom(EscapeCompany company, int id) {
-    assert(company != NULL && id > 0);
+    if(company == NULL || id <= 0) {
+        return NULL;
+    }
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(RoomGetId(curr_room) == id) {
             return curr_room;
@@ -139,7 +160,9 @@ EscapeRoom CompanyGetRoom(EscapeCompany company, int id) {
 
 bool CompanyUserHasBookings(EscapeCompany company, char* email, int hour, 
                                                                     int day) {
-    assert(company != NULL && email != NULL);
+    if(company == NULL || email == NULL) {
+        return false;
+    }
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
         if(RoomUserHasBookings(curr_room, email, hour, day)) {
             return true;
@@ -183,4 +206,23 @@ EscapeRoom CompanyGetRecommendedRoom(EscapeCompany company, int level, int
     *(id) = minId;
     *(score) = minScore;
     return minRoom;
+}
+
+List CompanyGetTodayList(EscapeCompany company) {
+    if(company == NULL) {
+        return NULL;
+    }
+    List list = listCreate(BookingCopy, BookingDestroy);
+    if(list == NULL) {
+        return NULL;
+    }
+    List temp;
+    LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
+        temp = RoomGetTodayList(curr_room);
+        if(temp == NULL) {
+            return NULL;
+        }
+        list = ConcatLists(list, temp);
+    }
+    return list;
 }

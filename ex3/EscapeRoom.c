@@ -17,6 +17,11 @@ struct escape_room_t {
 
 EscapeRoom RoomCreate(int id, int price, int num_person, char* working_hours, 
                         int difficulty) {
+    if(id < 0 || price%4 != 0 || num_person <= 0 || difficulty < 1 || difficulty
+                                > 10 || working_hours == NULL || 
+                                CheckLegalHours(working_hours) != TRUE) {
+        return NULL;                                
+    } 
     EscapeRoom room = malloc(sizeof(*room));
     if(room == NULL) {
         return NULL;
@@ -101,7 +106,9 @@ int RoomGetPrice(EscapeRoom room) {
 }
 
 bool RoomUserHasBookings(EscapeRoom room, char *email, int hour, int day) {
-    assert(room != NULL && email != NULL);
+    if(room == NULL || email == NULL) {
+        return false;
+    }
     LIST_FOREACH(Booking, curr_booking, room -> bookings) {
         if(BookingUserBooking(curr_booking, email, hour, day)) {
             return true;
@@ -111,7 +118,9 @@ bool RoomUserHasBookings(EscapeRoom room, char *email, int hour, int day) {
 }
 
 bool RoomAvailable(EscapeRoom room, int day, int hour) {
-    assert(room != NULL);
+    if(room == NULL || day < 0 || hour < 0 || hour > 23) {
+        return false;
+    }
     int opening, closing;
     GetTimes(room -> working_hours, &opening, &closing);
     if(hour < opening || hour >= closing) {
@@ -126,13 +135,23 @@ bool RoomAvailable(EscapeRoom room, int day, int hour) {
     return true;
 }
 
-MtmErrorCode RoomAddBooking(EscapeRoom room, Booking booking) {
-    assert(room != NULL && booking != NULL);
+RoomErr RoomAddBooking(EscapeRoom room, Booking booking) {
+    if(room == NULL || booking == NULL) {
+        return ROOM_INVALID_PARAMETER;
+    }
     ListResult insert_result = listInsertLast(room -> bookings, (void*)booking);
     if(insert_result == LIST_OUT_OF_MEMORY) {
-        return MTM_OUT_OF_MEMORY;
+        return ROOM_OUT_OF_MEMORY;
+    } else if(insert_result == LIST_NULL_ARGUMENT) {
+        return ROOM_INVALID_PARAMETER;
     }
-    return MTM_SUCCESS;
+    ListResult sort_result = listSort(room -> bookings, BookingCompare);
+    if(sort_result == LIST_OUT_OF_MEMORY) {
+        return ROOM_OUT_OF_MEMORY;
+    } else if(sort_result == LIST_NULL_ARGUMENT) {
+        return ROOM_INVALID_PARAMETER;
+    }
+    return ROOM_SUCCESS;
 }
 
 int RoomGetScore(EscapeRoom room, int level, int num_ppl) {
@@ -158,4 +177,31 @@ char* RoomGetClosestAvailable(EscapeRoom room) {
     }
     char* time = CreateString(hour, day);
     return time;
+}
+
+int RoomCompare(void* room1, void* room2) {
+    assert(room1 != NULL && room2 != NULL);
+    EscapeRoom new_room1 = (EscapeRoom)room1, new_room2 = (EscapeRoom)room2;
+    return(new_room1 -> id - new_room2 -> id);
+}
+
+List RoomGetTodayList(EscapeRoom room) {
+    if(room == NULL) {
+        return NULL;
+    }
+    List list = listCreate(BookingCopy, BookingDestroy);
+    if(list == NULL) {
+        return NULL;
+    }
+    LIST_FOREACH(Booking, curr_booking, room -> bookings) {
+        if(BookingGetDays(curr_booking) == 0) {
+            ListResult list_insert = listInsertFirst(list, curr_booking);
+            if(list_insert == LIST_OUT_OF_MEMORY) {
+                return NULL;
+            } //NULL arguemnt won't happen
+        } else {
+            BookingReduceDay(curr_booking);
+        }
+    }
+    return list;
 }

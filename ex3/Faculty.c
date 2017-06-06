@@ -91,20 +91,29 @@ int FacultyGetProfit (Faculty faculty) {
 }
 
 bool FacultyCompanyExists(Faculty faculty, char* email) {
+    if(faculty == NULL || email == NULL) {
+        return false;
+    }
     return setIsIn(faculty -> companies, email);
 }
 
-MtmErrorCode FacultyInsertCompany(Faculty faculty, EscapeCompany company) {
-    assert(faculty != NULL && company != NULL);
+FacultyErr FacultyInsertCompany(Faculty faculty, EscapeCompany company) {
+    if(faculty == NULL || company == NULL) {
+        return FACULTY_INVALID_PARAMETER;
+    }
     SetResult insert_result = setAdd(faculty -> companies, (void*)company);
     if(insert_result == SET_OUT_OF_MEMORY) {
-        return MTM_OUT_OF_MEMORY;
+        return FACULTY_OUT_OF_MEMORY;
+    } else if(insert_result == SET_ITEM_ALREADY_EXISTS) {
+        return FACULTY_COMPANY_EXISTS;
     }
-    return MTM_SUCCESS;
+    return FACULTY_SUCCESS;
 }
 
 EscapeCompany FacultyGetCompany(Faculty faculty, char* email) {
-    assert(faculty != NULL && email != NULL);
+    if(faculty == NULL || email == NULL) {
+        return NULL;
+    }
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
         if(strcmp(CompanyGetEmail(curr_company), email) == 0) {
             return curr_company;
@@ -113,17 +122,21 @@ EscapeCompany FacultyGetCompany(Faculty faculty, char* email) {
     return NULL;
 }
 
-MtmErrorCode FacultyRemoveCompany(Faculty faculty, EscapeCompany company) {
-    assert(faculty != NULL && company != NULL);
+FacultyErr FacultyRemoveCompany(Faculty faculty, EscapeCompany company) {
+    if(faculty == NULL || company == NULL) {
+        return FACULTY_INVALID_PARAMETER;
+    }
     SetResult remove_result = setRemove(faculty -> companies, (void*)company);
     if(remove_result != SET_SUCCESS) {
-        return MTM_INVALID_PARAMETER;
-    }
-    return MTM_SUCCESS;
+        return FACULTY_INVALID_PARAMETER;
+    } 
+    return FACULTY_SUCCESS;
 }
 
 EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
-    assert(faculty != NULL && id > 0);
+    if(faculty == NULL || id <= 0) {
+        return NULL;
+    }
     EscapeRoom room;
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
         if(CompanyRoomExists(curr_company, id)) {
@@ -147,7 +160,9 @@ EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
 }
 
 bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day) {
-    assert(faculty != NULL && email != NULL);
+    if(faculty == NULL || email == NULL) {
+        return false;
+    }
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
         if(CompanyUserHasBookings(curr_company, email, hour, day)) {
             return true;
@@ -196,4 +211,23 @@ EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl,
     }
     *(score) = minScore;
     return minRoom;
+}
+
+List FacultyGetTodayList(Faculty faculty) {
+    if(faculty == NULL) {
+        return NULL;
+    }
+    List list = listCreate(BookingCopy, BookingDestroy);
+    if(list == NULL) {
+        return NULL;
+    }
+    List temp;
+    SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
+        temp = CompanyGetTodayList(curr_company);
+        if(temp == NULL) {
+            return NULL;
+        }
+        list = ConcatLists(list, temp);
+    }
+    return list;
 }

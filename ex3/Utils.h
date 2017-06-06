@@ -3,10 +3,20 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <math.h>
+
+typedef enum {
+    TRUE,
+    FALSE,
+    ERROR,
+} UtilsResult;
 
 int StringOccurencesOfChar(char* string, char look_for);
 char* StrDuplicate(char* str);
-void GetTimes(char* str, int* first, int* second);
-bool CheckLegalHours(char* working_hours);
-bool CheckLegalDayTime(char* time);
+UtilsResult GetTimes(char* str, int* first, int* second);
+UtilsResult CheckLegalHours(char* working_hours);
+UtilsResult CheckLegalDayTime(char* time);
+char* CreateString(int x, int y);
 #endif

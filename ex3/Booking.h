@@ -13,4 +13,6 @@ void* BookingCopy(void* booking);
 int BookingGetDays(Booking booking);
 int BookingGetHour(Booking booking);
 bool BookingUserBooking(Booking booking, char* email, int day, int hour);
+int BookingCompare(void* booking1, void* booking2);
+void BookingReduceDay(Booking booking);
 #endif

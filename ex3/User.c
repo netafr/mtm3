@@ -8,6 +8,10 @@ struct user_t {
 };
 
 User UserCreate(char* email, int skill_level, TechnionFaculty faculty) {
+    if(email == NULL || StringOccurencesOfChar(email, '@') != 1 || skill_level <
+        1 || skill_level > 10 || faculty < 0 || faculty > UNKNOWN) {
+        return NULL;        
+    }
     User user = malloc(sizeof(*user));
     if(user == NULL) {
         return NULL;
@@ -63,16 +67,22 @@ int UserCompare(void* user1, void* user2) {
 }
 
 int UserGetLevel(User user) {
-    assert(user != NULL);
+    if(user == NULL) {
+        return 0;
+    }
     return(user -> skill_level);
 }
 
 char* UserGetEmail(User user) {
-    assert(user != NULL);
+    if(user == NULL) {
+        return NULL;
+    }
     return(user -> email);
 }
 
 TechnionFaculty UserGetFaculty(User user) {
-    assert(user != NULL);
+    if(user == NULL) {
+        return -1;  
+    }
     return(user -> faculty);
 }

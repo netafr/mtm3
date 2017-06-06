@@ -131,6 +131,28 @@ static bool SystemHasRooms(EscapeTechnion escape_system) {
     return true;
 }
 
+/* This function gets escape_system and returns a list with all of the bookings
+    that happen today. If there is a memory problem we return NULL. Also reduces
+    the number of days left in each booking in the system. */
+static List GetTodayList(EscapeTechnion escape_system) {
+    if(escape_system == NULL) {
+        return NULL;
+    }
+    List list = listCreate(BookingCopy, BookingDestroy);
+    if(list == NULL) {
+        return NULL;
+    }
+    List temp;
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        temp = FacultyGetTodayList(escape_system -> faculties[i]);
+        if(temp == NULL) {
+            return NULL;
+        }
+        list = ConcatLists(list, temp);
+    }
+    return list;
+}
+
 /* This function gets escape_system, int level, TechnionFaculty faculty and int
     num_ppl and returns the recommended room by the given condition and the 
     parameters level and num_ppl. */
@@ -222,11 +244,14 @@ MtmErrorCode SystemAddCompany(EscapeTechnion escape_system, char* email,
             if(company == NULL) {
                 return MTM_OUT_OF_MEMORY;
             }
-            MtmErrorCode insert_result = FacultyInsertCompany(escape_system -> 
+            FacultyErr insert_result = FacultyInsertCompany(escape_system -> 
                                                         faculties[i], company);
             CompanyDestroy(company); //Set creates copy so we free the original.
-            if(insert_result != MTM_SUCCESS) {
-                return insert_result;
+            if(insert_result == FACULTY_COMPANY_EXISTS || insert_result == 
+                                                    FACULTY_INVALID_PARAMETER) {
+                return MTM_INVALID_PARAMETER;
+            } else if(insert_result == FACULTY_OUT_OF_MEMORY) {
+                return MTM_OUT_OF_MEMORY;
             }
             return MTM_SUCCESS;
         }
@@ -255,9 +280,12 @@ MtmErrorCode SystemRemoveCompany(EscapeTechnion escape_system, char* email) {
     if(CompanyHasBookings(company_to_remove)) {
         return MTM_RESERVATION_EXISTS;
     }
-    MtmErrorCode remove_result = FacultyRemoveCompany(faculty_of_company, 
+    FacultyErr remove_result = FacultyRemoveCompany(faculty_of_company, 
                                                         company_to_remove);
-    return remove_result;
+    if(remove_result != FACULTY_SUCCESS) {
+        return MTM_INVALID_PARAMETER;
+    }
+    return MTM_SUCCESS;
 }
 
 /* This function is called when we want to add room to the system. It gets
@@ -271,9 +299,12 @@ MtmErrorCode SystemRemoveCompany(EscapeTechnion escape_system, char* email) {
 MtmErrorCode SystemAddRoom(EscapeTechnion escape_system, char* email, int id, 
                 int price, int num_ppl, char* working_hours, int difficulty) {
     if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email, 
-        '@') != 1 || id <= 0 || price%4 != 0 || num_ppl <= 0 || difficulty < 1
-        || difficulty > 10 || !CheckLegalHours(working_hours)) {
+        '@') != 1 || id < 0 || price%4 != 0 || num_ppl <= 0 || difficulty < 1
+        || difficulty > 10 || CheckLegalHours(working_hours) == FALSE) {
             return MTM_INVALID_PARAMETER;
+    }
+    if(CheckLegalHours(working_hours) == ERROR) {
+        return MTM_OUT_OF_MEMORY;
     }
     if(!CompanyMailExists(escape_system, email)) {
         return MTM_COMPANY_EMAIL_DOES_NOT_EXIST;
@@ -284,9 +315,14 @@ MtmErrorCode SystemAddRoom(EscapeTechnion escape_system, char* email, int id,
     EscapeCompany room_company = GetCompany(escape_system, email, NULL);
     EscapeRoom room_to_add = RoomCreate(id, price, num_ppl, working_hours,
                                                                     difficulty);
-    MtmErrorCode insert_result = CompanyInsertRoom(room_company, room_to_add);
+    CompanyErr insert_result = CompanyInsertRoom(room_company, room_to_add);
     RoomDestroy(room_to_add); //List adds a copy so we free the original.
-    return insert_result;
+    if(insert_result == COMPANY_INVALID_PARAMETER) {
+        return MTM_INVALID_PARAMETER;
+    } else if(insert_result == COMPANY_OUT_OF_MEMORY) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    return MTM_SUCCESS;
 }
 
 /* This function is called when we want to remove room from the system. It gets
@@ -309,8 +345,11 @@ MtmErrorCode SystemRemoveRoom(EscapeTechnion escape_system, TechnionFaculty
     if(RoomHasBookings(wanted_room)) {
         return MTM_RESERVATION_EXISTS;
     }
-    MtmErrorCode remove_result = CompanyRemoveRoom(room_company, wanted_room);
-    return remove_result;
+    CompanyErr remove_result = CompanyRemoveRoom(room_company, wanted_room);
+    if(remove_result == COMPANY_INVALID_PARAMETER) {
+        return MTM_INVALID_PARAMETER;
+    }
+    return MTM_SUCCESS;
 }
 
 /* This function is called when we want to add new user to the system. It gets
@@ -378,9 +417,12 @@ MtmErrorCode SystemRemoveUser(EscapeTechnion escape_system, char* email) {
 MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email, 
                 TechnionFaculty faculty, int id, char* time, int num_ppl) {
     if(escape_system == NULL || user_email == NULL || StringOccurencesOfChar
-    (user_email, '@') != 1 || id < 1 || num_ppl < 1 || !CheckLegalDayTime(time))
-                                                                            {
+    (user_email, '@') != 1 || id < 1 || num_ppl < 1 || CheckLegalDayTime(time) 
+                                                                == FALSE) {
         return MTM_INVALID_PARAMETER;
+    }
+    if(CheckLegalDayTime(time) == ERROR) {
+        return MTM_OUT_OF_MEMORY;
     }
     User user = GetUser(escape_system, user_email);
     if(user == NULL) {
@@ -392,7 +434,10 @@ MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email,
         return MTM_ID_DOES_NOT_EXIST;
     }
     int day, hour;
-    GetTimes(time, &day, &hour);
+    UtilsResult res = GetTimes(time, &day, &hour);
+    if(res == ERROR) {
+        return MTM_OUT_OF_MEMORY;
+    }
     if(UserHasBookings(escape_system, user_email, hour, day)) {
         return MTM_CLIENT_IN_ROOM;
     }
@@ -410,11 +455,23 @@ MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email,
     if(booking == NULL) {
         return MTM_OUT_OF_MEMORY;
     }
-    MtmErrorCode insert_result = RoomAddBooking(room, booking);
-    return insert_result;
+    RoomErr insert_result = RoomAddBooking(room, booking);
+    if(insert_result == ROOM_INVALID_PARAMETER) {
+        return MTM_INVALID_PARAMETER;
+    } else if(insert_result == ROOM_OUT_OF_MEMORY) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    return MTM_SUCCESS;
 }
 
-
+/* This function is called when want to get the recommended room for a user and
+    make a booking for the closest time in it. It gets escape_system, char* 
+    email and int num_ppl. If escape_system or email are NULL or email or 
+    num_ppl are illegal we return MTM_INVALID_PARAMETER, if the user with the 
+    given email doesn't exist we return MTM_CLIENT_EMAIL_DOES_NOT_EXIST, if the
+    system doesn't have rooms we return MTM_NO_ROOMS_AVAILABLE, if there is
+    memory error along the way we return MTM_OUT_OF_MEMORY, otherwise we return
+    the result of the SystemAddBooking function. */
 MtmErrorCode SystemRecommendedRoom(EscapeTechnion escape_system, char* email, 
                                                             int num_ppl) {
     if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email,
@@ -431,16 +488,116 @@ MtmErrorCode SystemRecommendedRoom(EscapeTechnion escape_system, char* email,
     EscapeRoom room = GetRecommendedRoom(escape_system, UserGetLevel(user), 
                                                 UserGetFaculty(user), num_ppl);
     assert(room != NULL);
-    char* time;
+    int day, hour;
+    char* time = NULL;
     do {
+        if(time != NULL) {
+            free(time);
+            time = NULL;
+        }
         time = RoomGetClosestAvailable(room);
         if(time == NULL) {
             return MTM_OUT_OF_MEMORY;
         }
-        int day, hour;
-        GetTimes(time, &day, &hour);
+        UtilsResult res = GetTimes(time, &day, &hour);
+        if(res == ERROR) {
+            return MTM_OUT_OF_MEMORY;
+        }
     } while(UserHasBookings(escape_system, email, hour, day)); 
     MtmErrorCode add_result = SystemAddOrder(escape_system, email, 
         UserGetFaculty(user), RoomGetId(room), time, num_ppl);
     return add_result;
+}
+
+
+MtmErrorCode SystemReportDay(EscapeTechnion escape_system, FILE* outputChannel) {
+    if(escape_system == NULL || outputChannel == NULL) {
+        return;
+    }
+    List today_list = GetTodayList(escape_system);
+    mtmPrintDayHeader(outputChannel, escape_system -> day, 
+                                                    listGetSize(today_list));
+    if(listGetSize(today_list) == 0) {
+        mtmPrintDayFooter(outputChannel, escape_system -> day);
+        return MTM_SUCCESS;
+    }
+    if(today_list == NULL) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    ListResult sort_result = listSort(today_list, FacultyOrder);
+    if(sort_result == LIST_OUT_OF_MEMORY) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    sort_result = listSort(today_list, HourOrder);
+    if(sort_result == LIST_OUT_OF_MEMORY) {
+        return MTM_OUT_OF_MEMORY;
+    }
+    LIST_FOREACH(Booking, curr_booking, today_list) {
+        mtmPrintOrder();
+    }
+    mtmPrintDayFooter(outputChannel, escape_system -> day);
+    return MTM_SUCCESS;
+}
+
+/* This function is called when we want to report the top 3 faculties. It gets
+    escape_system and FILE* outputChannel, and if they are not NULL it prints
+    the top3 faculties, total revenue and each of the top faculties' revenue. */
+void SystemReportBest(EscapeTechnion escape_system, FILE* outputChannel) {
+    if(escape_system == NULL || outputChannel == NULL) {
+        return;
+    }
+    int total_revenue = 0;
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        total_revenue += FacultyGetProfit(escape_system -> faculties[i]);
+    }
+    mtmPrintFacultiesHeader(outputChannel, escape_system -> num_of_faculties, 
+                                        escape_system -> day, total_revenue);
+    Faculty top3[3] = {escape_system -> faculties[0], escape_system -> faculties[1],
+                                                escape_system -> faculties[2]};
+    for(int j = 0; j < escape_system -> num_of_faculties; ++j) {
+        int faculty1 = FacultyGetProfit(top3[0]), faculty2 = FacultyGetProfit
+                (top3[1]), faculty3 = FacultyGetProfit(top3[2]), curr_faculty =
+                    FacultyGetProfit(escape_system -> faculties[j]);
+        int id1 = FacultyGetName(top3[0]), id2 = FacultyGetName(top3[1]), id3 = 
+                FacultyGetName(top3[2]), curr_id = FacultyGetName(
+                                                escape_system -> faculties[j]);
+        if(curr_faculty >= faculty3 && curr_faculty < faculty2) {
+            if(curr_faculty == faculty3 && curr_id < id3) {
+                top3[2] = curr_faculty;
+            } else if(curr_faculty > faculty3) {
+                top3[2] = curr_faculty;
+            }
+        } else if(curr_faculty >= faculty2 && curr_faculty < faculty1) {
+            if(curr_faculty == faculty2 && curr_id < id2) {
+                top3[1] = curr_faculty;
+            } else if(curr_faculty > faculty2) {
+                top3[1] = curr_faculty;
+            }
+        } else if(curr_faculty >= faculty1) {
+            if(curr_faculty == faculty3 && curr_id < id1) {
+                top3[0] = curr_faculty;
+            } else if(curr_faculty > faculty1) {
+                top3[0] = curr_faculty;
+            }
+        }
+    }
+    for(int l = 0; l < 3; l++) {
+        mtmPrintFaculty(outputChannel, FacultyGetName(top3[l]), 
+                                            FacultyGetProfit(top3[l]));
+    }
+    mtmPrintFacultiesFooter(outputChannel);
+}
+
+/* This function is called when we want to end the program. It gets 
+    escape_system and frees all the malloc'ed memory. */
+void SystemDestroy(EscapeTechnion escape_system) {
+    if(escape_system == NULL) {
+        return;
+    }
+    for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
+        FacultyDestroy(escape_system -> faculties[i]);
+    }
+    free(escape_system -> faculties);
+    setDestroy(escape_system -> users);
+    free(escape_system);
 }

@@ -15,6 +15,12 @@ struct booking_t {
 
 Booking BookingCreate(int days, int hour, int total_price, int num_of_people, 
         char* user_email, char* company_email, TechnionFaculty room_faculty) {
+    if(days < 0 || hour > 23 || hour < 0 || num_of_people < 0 || user_email == 
+        NULL || company_email == NULL || room_faculty < 0 || room_faculty > 
+            UNKNOWN || StringOccurencesOfChar(user_email, '@') != 1 ||
+                StringOccurencesOfChar(company_email, '@') != 1) {
+        return NULL;            
+    }
     Booking booking = malloc(sizeof(*booking));
     if(booking == NULL) {
         return NULL;
@@ -91,10 +97,25 @@ int BookingGetHour(Booking booking) {
 }
 
 bool BookingUserBooking(Booking booking, char* email, int hour, int day) {
-    assert(booking != NULL && email != NULL);
+    if(booking == NULL || email == NULL) {
+        return false;
+    }
     if(strcmp(booking -> user_email, email) == 0 && hour == booking -> hour &&
                                                     day == booking -> days) {
         return true;
     }
     return false;
+}
+
+int BookingCompare(void* booking1, void* booking2) {
+    assert(booking1 != NULL && booking2 != NULL);
+    Booking new_booking1 = (Booking)booking1, new_booking2 = (Booking)booking2;
+    return(new_booking1 -> days - new_booking2 -> days);
+}
+
+void BookingReduceDay(Booking booking) {
+    if(booking == NULL) {
+        return;
+    }
+    (booking -> days)--;
 }

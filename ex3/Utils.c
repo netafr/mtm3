@@ -1,5 +1,4 @@
 #include "Utils.h"
-#include <math.h>
 
 /* This function gets char* str and char look_for and returns the number of
     occurences of look_for in str. */
@@ -30,39 +29,50 @@ char* StrDuplicate(char* str) {
 
 /* This function gets char* str and 2 pointers to ints, and puts in each of them
     the 2 parts of the str, seperated by '-'. */
-void GetTimes(char* str, int* first, int* second) {
+UtilsResult GetTimes(char* str, int* first, int* second) {
     assert(str != NULL && first != NULL && second != NULL);
-    char* split = strtok(str, "-");
+    char* split = StrDuplicate(str);
+    if(split == NULL) {
+        return ERROR;
+    }
+    split = strtok(str, "-");
     *(first) = atoi(split);
     split = strtok(NULL, "-");
     *(second) = atoi(split);
+    return TRUE;
 }
 
 /* This function gets char* working_hours and returns whether its in the right
     and legal format of working_hours as described. */
-bool CheckLegalHours(char* working_hours) {
+UtilsResult CheckLegalHours(char* working_hours) {
     if(working_hours == NULL) {
-        return false;
+        return FALSE;
     }
     int opening, closing;
-    GetTimes(working_hours, &opening, &closing);
+    UtilsResult res = GetTimes(working_hours, &opening, &closing);
+    if(res == ERROR) {
+        return ERROR;
+    }
     if(opening < 0 || opening > 24 || closing < 0 || closing > 24 || 
                                                         opening >= closing) {
-        return false;                                                    
+        return FALSE;                                                    
     }
-    return true;
+    return TRUE;
 }
 
 /* This function gets char* time and returns wheter its in the right and legal
     format of time as described. */
-bool CheckLegalDayTime(char* time) {
+UtilsResult CheckLegalDayTime(char* time) {
     assert(time != NULL);
     int day, hour;
-    GetTimes(time, &day, &hour);
-    if(day < 0 || hour < 0 || hour > 23) {
-        return false;
+    UtilsResult res = GetTimes(time, &day, &hour);
+    if(res == ERROR) {
+        return ERROR;
     }
-    return true;
+    if(day < 0 || hour < 0 || hour > 23) {
+        return FALSE;
+    }
+    return TRUE;
 }
 
 char* CreateString(int x, int y) {
@@ -81,10 +91,21 @@ char* CreateString(int x, int y) {
     if(str == NULL) {
         return NULL;
     }
-    for(int i = 0; i < strlen(str); ++i) {
+    sprintf(str, "%d - %d", x, y);
+    return str;
+    
+    
+    
+    /*for(int i = 0; i < strlen(str); ++i) {
         if(i < x_len) {
             
         }
+        else if(i = x_len) {
+            
+        } else {
+            assert(i > x_len);
+            
+        }
     }
+    return str;*/
 }
-
