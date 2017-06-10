@@ -32,7 +32,7 @@ static bool hasLetter(ListElement element,ListFilterKey letter) {
 }
 
 static int stringCmp(ListElement first, ListElement second) {
-	return strcmp((char*)first, (char*)second);
+	return -strcmp((char*)first, (char*)second);
 }
 
 

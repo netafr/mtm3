@@ -85,10 +85,7 @@ bool RoomHasBookings(EscapeRoom room) {
     if(room == NULL) {
         return false;
     }
-    if(listGetSize > 0) {
-        return true;
-    }
-    return false;
+    return(listGetSize(room -> bookings) > 0);
 }
 
 int RoomGetId(EscapeRoom room) {
@@ -122,16 +119,23 @@ bool RoomAvailable(EscapeRoom room, int day, int hour) {
         return false;
     }
     int opening, closing;
-    GetTimes(room -> working_hours, &opening, &closing);
+    char* temp = StrDuplicate(room -> working_hours);
+    if(temp == NULL) {
+        return NULL;
+    }
+    GetTimes(temp, &opening, &closing);
     if(hour < opening || hour >= closing) {
+        free(temp);
         return false;
     }
     LIST_FOREACH(Booking, curr_booking, room -> bookings) {
         if(BookingGetDays(curr_booking) == day && BookingGetHour(curr_booking) 
                                                                     == hour) {
+            free(temp);
             return false;                                                            
         }
     }
+    free(temp);
     return true;
 }
 
@@ -158,10 +162,13 @@ int RoomGetScore(EscapeRoom room, int level, int num_ppl) {
     if(room == NULL) {
         return -1;
     }
-    return sqrt(pow(room -> recommended_num_person - num_ppl, 2) + pow(room -> 
-                                                        difficulty - level, 2));
+    int people = room -> recommended_num_person - num_ppl, skill = room -> 
+                                                        difficulty - level;
+    return (people*people) + (skill*skill);
 }
 
+/*  Receives a room. Returns a string that contains the soonest day and hour
+    in which you can make a new booking. */
 char* RoomGetClosestAvailable(EscapeRoom room) {
     if(room == NULL) {
         return NULL;
@@ -175,10 +182,11 @@ char* RoomGetClosestAvailable(EscapeRoom room) {
             hour++;
         }
     }
-    char* time = CreateString(hour, day);
+    char* time = CreateString(day, hour);
     return time;
 }
 
+/*  Receives 2 rooms. Compares both, by ID. */
 int RoomCompare(void* room1, void* room2) {
     assert(room1 != NULL && room2 != NULL);
     EscapeRoom new_room1 = (EscapeRoom)room1, new_room2 = (EscapeRoom)room2;
@@ -193,15 +201,29 @@ List RoomGetTodayList(EscapeRoom room) {
     if(list == NULL) {
         return NULL;
     }
-    LIST_FOREACH(Booking, curr_booking, room -> bookings) {
+    Booking curr_booking = listGetFirst(room -> bookings);
+    while(curr_booking != NULL) {
         if(BookingGetDays(curr_booking) == 0) {
             ListResult list_insert = listInsertFirst(list, curr_booking);
-            if(list_insert == LIST_OUT_OF_MEMORY) {
+            if(list_insert != LIST_SUCCESS) {
                 return NULL;
             } //NULL arguemnt won't happen
+            ListResult list_remove = listRemoveCurrent(room -> bookings);
+            if(list_remove != LIST_SUCCESS) {
+                return NULL;
+            }
+            curr_booking = listGetFirst(room -> bookings);
         } else {
             BookingReduceDay(curr_booking);
+            curr_booking = listGetNext(room -> bookings);
         }
     }
     return list;
+}
+
+int RoomGetDifficulty(EscapeRoom room) {
+    if(room == NULL) {
+        return -1;
+    }
+    return room -> difficulty;
 }

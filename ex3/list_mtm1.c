@@ -370,7 +370,7 @@ static void BubbleSort(List list, CompareListElements compareElement) {
         iterator = list -> list_head -> next;
         while(iterator -> next != last_sorted) {
             if(compareElement(iterator -> node_data, 
-                                        iterator -> next -> node_data) < 0) {
+                                        iterator -> next -> node_data) > 0) {
                 NodeSwap(iterator, iterator -> next);
                 swapped = 1;
             }

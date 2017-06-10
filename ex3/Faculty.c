@@ -12,8 +12,10 @@ struct faculty_t {
     Set companies;
 };
 
-/* Function receives a faculty name and creates a new faculty. */
+/* Function receives a faculty name and creates a new faculty. Returns NULL in 
+    case of memory problem. Enter only legal faculty name. */
 Faculty FacultyCreate (TechnionFaculty new_name) {
+    assert(new_name >= 0 && new_name < UNKNOWN);
     Faculty faculty = malloc(sizeof(*faculty));
     if (faculty == NULL) {
         return NULL;
@@ -39,6 +41,8 @@ void FacultyDestroy (Faculty faculty) {
     free(faculty);
 }
 
+/* Function receives a faculty and creates a new one with the same data. If
+    there is memory problem or faculty is NULL will return NULL. */
 Faculty FacultyCopy (Faculty faculty) {
     if(faculty == NULL) {
         return NULL;
@@ -57,32 +61,39 @@ Faculty FacultyCopy (Faculty faculty) {
     return new_faculty;
 }
 
+/* Function receives 2 faculties and compares them, if the first is greater 
+    reutrns > 0. Must send both not NULL. Compares them by the faculty name. */
 int FacultyCompare (Faculty first, Faculty second) {
     assert (first && second);
     return ((first -> faculty_name) - (second -> faculty_name));
 }
 
+/* Function receives 2 faculties and compares them, if the first is greater 
+    reutrns > 0. Must send both not NULL. Compares them by the faculty profit.*/
 int FacultyProfitCompare (Faculty first, Faculty second) {
     assert (first && second);
     return ((first -> profit) - (second -> profit));
 }
 
+/* Function receives faculty and returns its name (enum). Returns -1 if NULL. */
 TechnionFaculty FacultyGetName (Faculty faculty) {
     if (faculty == NULL) {
-        return 0;
+        return -1;
     }
     return faculty -> faculty_name;
 }
 
-void FacultySetProfit (Faculty faculty, int profit) {
+/* Function receives faculty and profit and adds the given profit to the faculty
+    profit field. Make sure profit is > 0. */
+void FacultyAddProfit (Faculty faculty, int profit) {
     if (faculty == NULL) {
         return;
     }
     assert (profit > 0);
-    faculty -> profit = profit;
-    return;
+    faculty -> profit += profit;
 }
 
+/* Function receives faculty and returns its profit. If it's NULL return -1. */
 int FacultyGetProfit (Faculty faculty) {
     if (faculty == NULL) {
         return -1;
@@ -90,13 +101,23 @@ int FacultyGetProfit (Faculty faculty) {
     return faculty -> profit;
 }
 
+/* Function receives faculty and email and returns wether exists a company with
+    the given email in the faculty. If one of them is NULL returns false. */
 bool FacultyCompanyExists(Faculty faculty, char* email) {
     if(faculty == NULL || email == NULL) {
         return false;
     }
-    return setIsIn(faculty -> companies, email);
+    if(setGetSize(faculty -> companies) == 0) {
+        return false;
+    }
+    return setIsIn(faculty -> companies, FacultyGetCompany(faculty, email));
 }
 
+/* Function receives faculty and company, and inserts the company into the 
+    faculty's companies set. If one of the parameters are NULL returns FACULTY_
+    INVALID_PARAMETER, if there is memory problem returns FACULTY_OUT_OF_MEMORY
+    if the company already exists returns FACULTY_COMPANY_EXISTS, otherwise
+    returns FACULTY_SUCCESS. */
 FacultyErr FacultyInsertCompany(Faculty faculty, EscapeCompany company) {
     if(faculty == NULL || company == NULL) {
         return FACULTY_INVALID_PARAMETER;
@@ -110,6 +131,9 @@ FacultyErr FacultyInsertCompany(Faculty faculty, EscapeCompany company) {
     return FACULTY_SUCCESS;
 }
 
+/* Function receives faculty and email and returns the company with the given
+    email within the faculty. If one of the parameters are NULL returns NULL,
+    if not found returns NULL.*/
 EscapeCompany FacultyGetCompany(Faculty faculty, char* email) {
     if(faculty == NULL || email == NULL) {
         return NULL;
@@ -122,6 +146,10 @@ EscapeCompany FacultyGetCompany(Faculty faculty, char* email) {
     return NULL;
 }
 
+/* Function receives faculty and company and removes the company from the 
+    faculty's set. If one of the parameters are NULL we return FACULTY_INVALID_
+    PARAMETER, if the company doesn't exist in the faculty we return FACULTY_
+    INVALID_PARAMETER, otherwise we return FACULTY_SUCCESS. */
 FacultyErr FacultyRemoveCompany(Faculty faculty, EscapeCompany company) {
     if(faculty == NULL || company == NULL) {
         return FACULTY_INVALID_PARAMETER;
@@ -133,7 +161,11 @@ FacultyErr FacultyRemoveCompany(Faculty faculty, EscapeCompany company) {
     return FACULTY_SUCCESS;
 }
 
-EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
+/* Function receives faculty, id and pointer to company and returns the room
+    in the faculty with the given id, and if company isnt null returns the 
+    room's company in it. If faculty is NULL or id is negative we return NULL,
+    also when the room isn't found. */
+EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany* company) {
     if(faculty == NULL || id <= 0) {
         return NULL;
     }
@@ -143,22 +175,25 @@ EscapeRoom FacultyGetRoom(Faculty faculty, int id, EscapeCompany company) {
             room = CompanyGetRoom(curr_company, id);
             if(room == NULL) {
                 if(company != NULL) {
-                    company = NULL;
+                    (*company) = NULL;
                 }
                 return NULL;
             }
             if(company != NULL) {
-                    company = curr_company;
+                    (*company) = curr_company;
             }
             return room;
         }
     }
     if(company != NULL) {
-        company = NULL;
+        (*company) = NULL;
     }
     return NULL;
 }
 
+/* Function receives faculty, email, hour and day and checks if there is a user
+    with a booking in the given hour and day in one of the facultiy's rooms. If
+    one of the parameteres are NULL returns false.*/
 bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day) {
     if(faculty == NULL || email == NULL) {
         return false;
@@ -171,6 +206,8 @@ bool FacultyUserHasBookings(Faculty faculty, char* email, int hour, int day) {
     return false;
 }
 
+/* Function receives faculty and returns if it has any rooms at all. If its NULL
+    returns false. */
 bool FacultyHasRooms(Faculty faculty) {
     if(faculty == NULL) {
         return false;
@@ -187,9 +224,13 @@ bool FacultyHasRooms(Faculty faculty) {
     return true;
 }
 
+/* Function receives faculty, level, num_ppl and pointer to int score. It 
+    returns the recommended room by the given formula with level and num_ppl, 
+    and puts into the score parmeter the score value (of the formula). If one
+    of the parameters are NULL or the faculty has no rooms returns NULL. */
 EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl, 
                                                                 int* score) {
-    if(faculty == NULL) {
+    if(faculty == NULL || score == NULL) {
         return NULL;
     }
     int minScore, minId, tempScore, tempId;
@@ -199,7 +240,12 @@ EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl,
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
         tempRoom = CompanyGetRecommendedRoom(curr_company, level, num_ppl, 
                                                         &tempId, &tempScore);
-        if(tempScore < minScore) {
+        if(minScore < 0) {
+            minScore = tempScore;
+            minId = tempId;
+            minRoom = tempRoom;
+        }
+        else if(tempScore < minScore) {
             minScore = tempScore;
             minId = tempId;
             minRoom = tempRoom;
@@ -213,6 +259,9 @@ EscapeRoom FacultyGetRecommenedRoom(Faculty faculty, int level, int num_ppl,
     return minRoom;
 }
 
+/* Function receives faculty and returns a list of all the faculty's bookings
+    that occured (people came) today. If faculty is NULL or there is a memory 
+    problem returns NULL. */
 List FacultyGetTodayList(Faculty faculty) {
     if(faculty == NULL) {
         return NULL;
@@ -221,13 +270,18 @@ List FacultyGetTodayList(Faculty faculty) {
     if(list == NULL) {
         return NULL;
     }
-    List temp;
     SET_FOREACH(EscapeCompany, curr_company, faculty -> companies) {
-        temp = CompanyGetTodayList(curr_company);
+        List temp = CompanyGetTodayList(curr_company);
         if(temp == NULL) {
             return NULL;
         }
-        list = ConcatLists(list, temp);
+        UtilsResult res= ConcatLists(list, temp, BookingCopy, BookingDestroy);
+        if(res == ERROR) {
+            listDestroy(temp);
+            listDestroy(list);
+            return NULL;
+        }
+        listDestroy(temp);
     }
     return list;
 }

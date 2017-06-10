@@ -133,7 +133,7 @@ CompanyErr CompanyRemoveRoom(EscapeCompany company, EscapeRoom room) {
         return COMPANY_INVALID_PARAMETER;
     }
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
-        if(curr_room == room) {//Both are pointers, check if they point on same.
+        if(RoomGetId(curr_room) == RoomGetId(room)) {
             ListResult remove_result = listRemoveCurrent(company -> 
                                                                 company_rooms);
             if(remove_result == LIST_INVALID_CURRENT || remove_result == 
@@ -183,7 +183,7 @@ bool CompanyHasRooms(EscapeCompany company) {
 
 EscapeRoom CompanyGetRecommendedRoom(EscapeCompany company, int level, int
                                                 num_ppl, int* id, int* score) {
-    if(company == NULL) {
+    if(company == NULL || id == NULL || score == NULL) {
         return NULL;
     }
     EscapeRoom minRoom = listGetFirst(company -> company_rooms);
@@ -216,13 +216,18 @@ List CompanyGetTodayList(EscapeCompany company) {
     if(list == NULL) {
         return NULL;
     }
-    List temp;
     LIST_FOREACH(EscapeRoom, curr_room, company -> company_rooms) {
-        temp = RoomGetTodayList(curr_room);
+        List temp = RoomGetTodayList(curr_room);
         if(temp == NULL) {
             return NULL;
         }
-        list = ConcatLists(list, temp);
+        UtilsResult res = ConcatLists(list, temp, BookingCopy, BookingDestroy);
+        if(res == ERROR) {
+            listDestroy(temp);
+            listDestroy(list);
+            return NULL;
+        }
+        listDestroy(temp);
     }
     return list;
 }

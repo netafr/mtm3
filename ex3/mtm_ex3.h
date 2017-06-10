@@ -4,6 +4,11 @@
 #include <stdio.h>
 
 /**
+ * Maximal input line length
+ */
+#define MAX_LEN 250
+
+/**
  * This type defines all errors for the system.
  * These codes should be used for calling mtmPrintErrorMessage to report
  * error messages.

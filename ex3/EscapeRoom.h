@@ -25,4 +25,5 @@ int RoomGetScore(EscapeRoom room, int level, int num_ppl);
 char* RoomGetClosestAvailable(EscapeRoom room);
 int RoomCompare(void* room1, void* room2);
 List RoomGetTodayList(EscapeRoom room);
+int RoomGetDifficulty(EscapeRoom room);
 #endif

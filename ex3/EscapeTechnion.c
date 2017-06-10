@@ -41,6 +41,7 @@ static User GetUser(EscapeTechnion escape_system, char* email) {
 }
 /* Helper function that gets escape_system and char* email and returns whether
     or not exists a company with the given email. */
+    
 static bool CompanyMailExists(EscapeTechnion escape_system, char* email) {
     for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
         if(FacultyCompanyExists(escape_system -> faculties[i], email)) {
@@ -94,7 +95,7 @@ static EscapeRoom GetRoom(EscapeTechnion escape_system, int id, TechnionFaculty
                                             faculty ,EscapeCompany company) {
     assert(escape_system != NULL);
     EscapeRoom room;
-    room = FacultyGetRoom(escape_system -> faculties[faculty], id, company);
+    room = FacultyGetRoom(escape_system -> faculties[faculty], id, &company);
     if(room != NULL) {
         return room;
     }
@@ -142,13 +143,13 @@ static List GetTodayList(EscapeTechnion escape_system) {
     if(list == NULL) {
         return NULL;
     }
-    List temp;
     for(int i = 0; i < escape_system -> num_of_faculties; ++i) {
-        temp = FacultyGetTodayList(escape_system -> faculties[i]);
+        List temp = FacultyGetTodayList(escape_system -> faculties[i]);
         if(temp == NULL) {
             return NULL;
         }
-        list = ConcatLists(list, temp);
+        ConcatLists(list, temp, BookingCopy, BookingDestroy);
+        listDestroy(temp);
     }
     return list;
 }
@@ -183,6 +184,47 @@ static EscapeRoom GetRecommendedRoom(EscapeTechnion escape_system, int level,
     }
     return minRoom;
 }
+
+/* Compare function for sorting the lsit of booking by the given requirments. */
+static int BookingOrder(void* booking1, void* booking2) {
+    assert(booking1 != NULL && booking2 != NULL);
+    Booking new_booking1 = (Booking)booking1, new_booking2 = (Booking)booking2;
+    int hour_diff = BookingGetHour(new_booking1) - BookingGetHour(new_booking2);
+    if(hour_diff == 0) {
+        int faculty_diff = BookingGetFaculty(new_booking1) - BookingGetFaculty(
+                                                            new_booking2);
+        if(faculty_diff == 0) {
+            return 0;
+        }
+        return faculty_diff;
+    }
+    return hour_diff;
+}
+
+/* This Function get esacpe_system and char* email and returns the user's with 
+    the given mail faculty. If doesn't exist return -1. */
+static TechnionFaculty GetUserFaculty(EscapeTechnion escape_system, char* 
+                                                                    email) {
+    if(escape_system == NULL || email == NULL) {
+        return -1;
+    }             
+    SET_FOREACH(User, curr_user, escape_system -> users) {
+        if(strcmp(UserGetEmail(curr_user), email) == 0) {
+            return UserGetFaculty(curr_user);
+        }
+    }
+    return -1;
+}
+
+/* This function gets escape_system and Booking booking and adds to the room's
+    faculty in the booking, the price of the booking. */
+static void PayBooking(EscapeTechnion escape_system, Booking booking) {
+    if(escape_system == NULL || booking == NULL) {
+        return;
+    }
+    FacultyAddProfit(escape_system -> faculties[BookingGetFaculty(booking)], 
+                                                BookingGetPrice(booking));
+}
 /* This function creates the system upon initializtion, when the program is 
     called. Its mallocs and creates the faculties array and the users set. 
     It initliazes all the faculties. If there is a memory problem it returns
@@ -206,7 +248,7 @@ EscapeTechnion SystemCreate() {
         free(escape_system);
         return NULL;
     }
-    TechnionFaculty j = CIVIL_ENGINEERING;
+    TechnionFaculty j = 0;
     for (int i = 0; i < escape_system -> num_of_faculties, j < UNKNOWN; 
                                                                 i++, j++) {
         escape_system -> faculties[i] = FacultyCreate(j);
@@ -231,7 +273,7 @@ EscapeTechnion SystemCreate() {
 MtmErrorCode SystemAddCompany(EscapeTechnion escape_system, char* email, 
                                                 TechnionFaculty faculty) {
     if(escape_system == NULL || email == NULL || (faculty >
-                UNKNOWN || faculty < CIVIL_ENGINEERING) || 
+                UNKNOWN || faculty < 0) || 
                                     StringOccurencesOfChar(email, '@') != 1) {
         return MTM_INVALID_PARAMETER;
     }
@@ -345,7 +387,7 @@ MtmErrorCode SystemRemoveRoom(EscapeTechnion escape_system, TechnionFaculty
     if(RoomHasBookings(wanted_room)) {
         return MTM_RESERVATION_EXISTS;
     }
-    CompanyErr remove_result = CompanyRemoveRoom(room_company, wanted_room);
+    CompanyErr remove_result = CompanyRemoveRoom((room_company), wanted_room);
     if(remove_result == COMPANY_INVALID_PARAMETER) {
         return MTM_INVALID_PARAMETER;
     }
@@ -362,7 +404,7 @@ MtmErrorCode SystemRemoveRoom(EscapeTechnion escape_system, TechnionFaculty
 MtmErrorCode SystemAddUser(EscapeTechnion escape_system, char* email, 
                                 TechnionFaculty faculty , int skill_level) {
     if(escape_system == NULL || email == NULL || StringOccurencesOfChar(email, 
-            '@') != 1 || faculty < CIVIL_ENGINEERING || faculty > UNKNOWN || 
+            '@') != 1 || faculty < 0 || faculty > UNKNOWN || 
                                         skill_level < 1 || skill_level > 10){
         return MTM_INVALID_PARAMETER;                                
     }
@@ -451,7 +493,7 @@ MtmErrorCode SystemAddOrder(EscapeTechnion escape_system, char* user_email,
          price = RoomGetPrice(room) * num_ppl;
     }
     Booking booking = BookingCreate(day, hour, price, num_ppl, user_email, 
-                                            CompanyGetEmail(company), faculty);
+                                    CompanyGetEmail(company), faculty, id);
     if(booking == NULL) {
         return MTM_OUT_OF_MEMORY;
     }
@@ -509,10 +551,15 @@ MtmErrorCode SystemRecommendedRoom(EscapeTechnion escape_system, char* email,
     return add_result;
 }
 
-
+/* This function is called when we want to end the current day, make the booking
+    payments for today, write today's events and update the whole system. It 
+    gets escape_system and FILE* outputChannel. If one the parameters are NULL
+    we return MTM_INVALID_PARMETER, if there is an error during getting the 
+    today's list fails we return MTM_MEMORY_PROBLEM, otherwise we return
+    MTM_SUCCESS. */
 MtmErrorCode SystemReportDay(EscapeTechnion escape_system, FILE* outputChannel) {
     if(escape_system == NULL || outputChannel == NULL) {
-        return;
+        return MTM_INVALID_PARAMETER;
     }
     List today_list = GetTodayList(escape_system);
     mtmPrintDayHeader(outputChannel, escape_system -> day, 
@@ -524,16 +571,24 @@ MtmErrorCode SystemReportDay(EscapeTechnion escape_system, FILE* outputChannel) 
     if(today_list == NULL) {
         return MTM_OUT_OF_MEMORY;
     }
-    ListResult sort_result = listSort(today_list, FacultyOrder);
+    ListResult sort_result = listSort(today_list, BookingOrder);
     if(sort_result == LIST_OUT_OF_MEMORY) {
         return MTM_OUT_OF_MEMORY;
     }
-    sort_result = listSort(today_list, HourOrder);
-    if(sort_result == LIST_OUT_OF_MEMORY) {
-        return MTM_OUT_OF_MEMORY;
-    }
+    
     LIST_FOREACH(Booking, curr_booking, today_list) {
-        mtmPrintOrder();
+        User user = GetUser(escape_system, BookingGetUserEmail(curr_booking));
+        EscapeRoom room = GetRoom(escape_system, BookingGetRoomId(curr_booking),
+                            BookingGetFaculty(curr_booking), GetCompany(
+                                escape_system, BookingGetCompanyEmail(
+                                    curr_booking), NULL));
+        mtmPrintOrder(outputChannel, BookingGetUserEmail(curr_booking), 
+            UserGetLevel(user), UserGetFaculty(user), BookingGetCompanyEmail
+            (curr_booking), BookingGetFaculty(curr_booking), 
+            BookingGetRoomId(curr_booking), BookingGetHour(curr_booking), 
+            RoomGetDifficulty(room), BookingGetNumPpl(curr_booking), 
+            BookingGetPrice(curr_booking));
+        PayBooking(escape_system, curr_booking);
     }
     mtmPrintDayFooter(outputChannel, escape_system -> day);
     return MTM_SUCCESS;
@@ -563,21 +618,21 @@ void SystemReportBest(EscapeTechnion escape_system, FILE* outputChannel) {
                                                 escape_system -> faculties[j]);
         if(curr_faculty >= faculty3 && curr_faculty < faculty2) {
             if(curr_faculty == faculty3 && curr_id < id3) {
-                top3[2] = curr_faculty;
+                top3[2] = escape_system -> faculties[j];
             } else if(curr_faculty > faculty3) {
-                top3[2] = curr_faculty;
+                top3[2] = escape_system -> faculties[j];
             }
         } else if(curr_faculty >= faculty2 && curr_faculty < faculty1) {
             if(curr_faculty == faculty2 && curr_id < id2) {
-                top3[1] = curr_faculty;
+                top3[1] = escape_system -> faculties[j];
             } else if(curr_faculty > faculty2) {
-                top3[1] = curr_faculty;
+                top3[1] = escape_system -> faculties[j];
             }
         } else if(curr_faculty >= faculty1) {
             if(curr_faculty == faculty3 && curr_id < id1) {
-                top3[0] = curr_faculty;
+                top3[0] = escape_system -> faculties[j];
             } else if(curr_faculty > faculty1) {
-                top3[0] = curr_faculty;
+                top3[0] = escape_system -> faculties[j];
             }
         }
     }

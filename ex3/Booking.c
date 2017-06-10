@@ -1,7 +1,7 @@
 #include "Booking.h"
 #include <malloc.h>
+#include <string.h>
 #include "mtm_ex3.h"
-#include "Utils.h"
 
 struct booking_t {
     int days;
@@ -11,10 +11,16 @@ struct booking_t {
     char* user_email;
     char* company_email;
     TechnionFaculty room_faculty;
+    int room_id;
 };
-
+/* Creates a new booking. Receives the day of the booking, hour of the booking,
+   the price, the number of people involved, the user email, the company email,
+   the faculty the room belongs to, and the room ID. 
+   Creates a new booking session and returns NULL if one of the variables are 
+   illegal. */
 Booking BookingCreate(int days, int hour, int total_price, int num_of_people, 
-        char* user_email, char* company_email, TechnionFaculty room_faculty) {
+        char* user_email, char* company_email, TechnionFaculty room_faculty,    
+                                                                int room_id) {
     if(days < 0 || hour > 23 || hour < 0 || num_of_people < 0 || user_email == 
         NULL || company_email == NULL || room_faculty < 0 || room_faculty > 
             UNKNOWN || StringOccurencesOfChar(user_email, '@') != 1 ||
@@ -30,6 +36,7 @@ Booking BookingCreate(int days, int hour, int total_price, int num_of_people,
     booking -> total_price = total_price;
     booking -> num_of_people = num_of_people;
     booking -> room_faculty = room_faculty;
+    booking -> room_id = room_id;
     booking -> user_email = StrDuplicate(user_email);
     if(booking -> user_email == NULL) {
         free(booking);
@@ -68,6 +75,7 @@ void* BookingCopy(void* booking) {
     new_booking -> total_price = temp -> total_price;
     new_booking -> num_of_people = temp -> num_of_people;
     new_booking -> room_faculty = temp -> room_faculty;
+    new_booking -> room_id = temp -> room_id;
     new_booking -> user_email = StrDuplicate(temp -> user_email);
     if(new_booking -> user_email == NULL) {
         free(new_booking);
@@ -118,4 +126,47 @@ void BookingReduceDay(Booking booking) {
         return;
     }
     (booking -> days)--;
+}
+
+TechnionFaculty BookingGetFaculty(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> room_faculty;
+}
+
+char* BookingGetUserEmail(Booking booking) {
+    if(booking == NULL) {
+        return NULL;
+    }
+    return booking -> user_email;
+}
+
+
+char* BookingGetCompanyEmail(Booking booking) {
+    if(booking == NULL) {
+        return NULL;
+    }
+    return booking -> company_email;
+}
+
+int BookingGetNumPpl(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> num_of_people;
+}
+
+int BookingGetPrice(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> total_price;
+}
+
+int BookingGetRoomId(Booking booking) {
+    if(booking == NULL) {
+        return -1;
+    }
+    return booking -> room_id;
 }
