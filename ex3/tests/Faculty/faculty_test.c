@@ -54,7 +54,7 @@ static bool testFacultyProfitCompare() {
 }
 
 static bool testFacultyGetName() {
-    ASSERT_TEST(FacultyGetName(NULL) == -1);
+    ASSERT_TEST(FacultyGetName(NULL) == UNKNOWN);
     Faculty faculty = FacultyCreate(PHYSICS);
     ASSERT_TEST(FacultyGetName(faculty) == PHYSICS);
     FacultyDestroy(faculty);
@@ -146,7 +146,7 @@ static bool testFacultyRemoveCompany() {
 static bool testFacultyGetRoom() {
     Faculty faculty = FacultyCreate(1);
     EscapeCompany company = CompanyCreate("hi@test");
-    EscapeRoom room = RoomCreate(1, 8, 3, "1-23", 3);
+    EscapeRoom room = RoomCreate(1, 8, 3, "01-23", 3);
     CompanyInsertRoom(company, room);
     EscapeCompany wanted;
     ASSERT_TEST(FacultyGetRoom(NULL, -1, NULL) == NULL);
@@ -166,9 +166,9 @@ static bool testFacultyUserHasBookings() {
     Faculty faculty = FacultyCreate(1);
     EscapeCompany company1 = CompanyCreate("hi@test");
     EscapeCompany company2 = CompanyCreate("other@test");
-    EscapeRoom rooma = RoomCreate(1, 8, 6, "1-17", 3);
-    EscapeRoom roomb = RoomCreate(2, 8, 6, "1-17", 3);
-    EscapeRoom roomc = RoomCreate(3, 8, 6, "1-16", 3);
+    EscapeRoom rooma = RoomCreate(1, 8, 6, "01-17", 3);
+    EscapeRoom roomb = RoomCreate(2, 8, 6, "01-17", 3);
+    EscapeRoom roomc = RoomCreate(3, 8, 6, "01-16", 3);
     Booking a = BookingCreate(2, 1, 4, 4, "usern@1131", "hi@test", 1, 4);
     Booking b = BookingCreate(1, 2, 4, 4, "usern@2131", "hi@test", 2, 5);
     Booking c = BookingCreate(2, 1, 4, 4, "usern@3131", "other@test", 3, 6);
@@ -201,8 +201,8 @@ static bool testFacultyHasRooms() {
     Faculty faculty = FacultyCreate(1);
     EscapeCompany company1 = CompanyCreate("hi@test");
     EscapeCompany company2 = CompanyCreate("other@test");
-    EscapeRoom rooma = RoomCreate(1, 8, 6, "1-17", 3);
-    EscapeRoom roomb = RoomCreate(2, 8, 6, "1-17", 3);
+    EscapeRoom rooma = RoomCreate(1, 8, 6, "01-17", 3);
+    EscapeRoom roomb = RoomCreate(2, 8, 6, "01-17", 3);
     CompanyInsertRoom(company1, rooma);
     CompanyInsertRoom(company1, roomb);
     ASSERT_TEST(!FacultyHasRooms(NULL));
@@ -225,10 +225,10 @@ static bool testFacultyGetRecommendedRoom() {
     EscapeCompany company1 = CompanyCreate("hi@test");
     EscapeCompany company2 = CompanyCreate("other@test");
     EscapeCompany company3 = CompanyCreate("empty@test");
-    EscapeRoom room1 = RoomCreate(1, 8, 3, "1-17", 3);
-    EscapeRoom room2 = RoomCreate(2, 8, 5, "1-18", 5);
-    EscapeRoom room3 = RoomCreate(3, 8, 3, "1-18", 3);
-    EscapeRoom room4 = RoomCreate(4, 8, 2, "1-14", 2);
+    EscapeRoom room1 = RoomCreate(1, 8, 3, "01-17", 3);
+    EscapeRoom room2 = RoomCreate(2, 8, 5, "01-18", 5);
+    EscapeRoom room3 = RoomCreate(3, 8, 3, "01-18", 3);
+    EscapeRoom room4 = RoomCreate(4, 8, 2, "01-14", 2);
     CompanyInsertRoom(company1, room1);
     CompanyInsertRoom(company1, room2);
     CompanyInsertRoom(company2, room3);
@@ -264,8 +264,8 @@ static bool testFacultyGetTodayList() {
     EscapeCompany company1 = CompanyCreate("1@test");
     EscapeCompany company2 = CompanyCreate("2@test");
     EscapeCompany company3 = CompanyCreate("3@test");
-    EscapeRoom room1 = RoomCreate(1, 8, 3, "1-17", 3);
-    EscapeRoom room2 = RoomCreate(2, 8, 3, "1-18", 3);
+    EscapeRoom room1 = RoomCreate(1, 8, 3, "01-17", 3);
+    EscapeRoom room2 = RoomCreate(2, 8, 3, "01-18", 3);
     Booking a = BookingCreate(1, 2, 4, 4, "usern@1131", "21@comp", 1, 1);
     Booking b = BookingCreate(2, 3, 4, 4, "usern@2131", "31@comp", 2, 1);
     Booking c = BookingCreate(2, 2, 4, 4, "usern@3131", "41@comp", 3, 2);
@@ -301,6 +301,46 @@ static bool testFacultyGetTodayList() {
     FacultyDestroy(faculty);
     return true;
 }
+
+static bool testFacultyRoomExists() {
+    Faculty faculty = FacultyCreate(1);
+    EscapeCompany company1 = CompanyCreate("hi@test");
+    EscapeCompany company2 = CompanyCreate("other@test");
+    EscapeCompany company3 = CompanyCreate("empty@test");
+    EscapeRoom room1 = RoomCreate(1, 8, 3, "01-17", 3);
+    EscapeRoom room2 = RoomCreate(2, 8, 5, "01-18", 5);
+    EscapeRoom room3 = RoomCreate(3, 8, 3, "01-18", 3);
+    EscapeRoom room4 = RoomCreate(4, 8, 2, "01-14", 2);
+    CompanyInsertRoom(company1, room1);
+    CompanyInsertRoom(company1, room2);
+    CompanyInsertRoom(company2, room3);
+    FacultyInsertCompany(faculty, company1);
+    FacultyInsertCompany(faculty, company2);
+    FacultyInsertCompany(faculty, company3);
+    ASSERT_TEST(FacultyRoomExists(faculty, 1));
+    ASSERT_TEST(!FacultyRoomExists(faculty, 5));
+    FacultyRemoveCompany(faculty, company3);
+    ASSERT_TEST(FacultyRoomExists(faculty, 1));
+    FacultyRemoveCompany(faculty, company1);
+    ASSERT_TEST(!FacultyRoomExists(faculty, 1));
+    EscapeCompany company4 = CompanyCreate("lst@test");
+    EscapeRoom room5 = RoomCreate(5, 8, 2, "02-14", 2);
+    CompanyInsertRoom(company4, room5);
+    FacultyInsertCompany(faculty, company4);
+    ASSERT_TEST(FacultyRoomExists(faculty, 5));
+    RoomDestroy(room1);
+    RoomDestroy(room2);
+    RoomDestroy(room3);
+    RoomDestroy(room4);
+    RoomDestroy(room5);
+    CompanyDestroy(company1);
+    CompanyDestroy(company2);
+    CompanyDestroy(company3);
+    CompanyDestroy(company4);
+    FacultyDestroy(faculty);
+    return true;
+}
+
 int main () {
     RUN_TEST(testFacultyCreate);
     RUN_TEST(testFacultyDestroy);
@@ -317,7 +357,9 @@ int main () {
     RUN_TEST(testFacultyGetRoom);
     RUN_TEST(testFacultyUserHasBookings);
     RUN_TEST(testFacultyHasRooms);
-    RUN_TEST(testFacultyGetRecommendedRoom);
+    RUN_TEST(testFacultyGetRecommendedRoom); 
     RUN_TEST(testFacultyGetTodayList);
+    //ADD testFaculty
+    RUN_TEST(testFacultyRoomExists);
     printf("Done! \n");
 }
