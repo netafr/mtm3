@@ -1,12 +1,12 @@
 #include "test_utilities.h"
-#include "../../EscapyCompany.h"
+#include "../EscapyCompany.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../mtm_ex3.h"
+#include "../mtm_ex3.h"
 
 static bool testCompanyCreate() {
     ASSERT_TEST(CompanyCreate(NULL) == NULL);
@@ -167,15 +167,15 @@ static bool testCompanyGetRecommendedRoom() {
     ASSERT_TEST(CompanyGetRecommendedRoom(NULL, 1, 1, &id, &score) == NULL);
     ASSERT_TEST(CompanyGetRecommendedRoom(company, 1, 1, &id, NULL) == NULL);
     ASSERT_TEST(CompanyGetRecommendedRoom(company, 1, 1, &id, &score) == NULL);
-    EscapeRoom room1 = RoomCreate(1, 8, 3, "1-17", 3);
-    EscapeRoom room2 = RoomCreate(2, 8, 5, "1-18", 5);
-    EscapeRoom room3 = RoomCreate(3, 8, 3, "1-18", 3);
+    EscapeRoom room1 = RoomCreate(1, 8, 3, "01-17", 3);
+    EscapeRoom room2 = RoomCreate(2, 8, 5, "01-18", 5);
+    EscapeRoom room3 = RoomCreate(3, 8, 3, "01-18", 3);
     CompanyInsertRoom(company, room1);
     CompanyInsertRoom(company, room2);
     CompanyInsertRoom(company, room3);
-    ASSERT_TEST(CompanyGetRecommendedRoom(company, 2, 2, &id, &score) != NULL);
+    ASSERT_TEST(CompanyGetRecommendedRoom(company, 2, 2, &id, &score) != NULL); 
     ASSERT_TEST(id == 1 && score == 2);
-    EscapeRoom room4 = RoomCreate(4, 8, 2, "1-14", 2);
+    EscapeRoom room4 = RoomCreate(4, 8, 2, "01-14", 2);
     CompanyInsertRoom(company, room4);
     ASSERT_TEST(CompanyGetRecommendedRoom(company, 2, 2, &id, &score) != NULL);
     ASSERT_TEST(id == 4 && score == 0);
@@ -192,8 +192,8 @@ static bool testCompanyGetTodayList() {
     EscapeCompany company = CompanyCreate("user@yanyan");
     List list = CompanyGetTodayList(company);
     ASSERT_TEST(listGetSize(list) == 0);
-    EscapeRoom room1 = RoomCreate(1, 8, 3, "1-17", 3);
-    EscapeRoom room2 = RoomCreate(2, 8, 3, "1-18", 3);
+    EscapeRoom room1 = RoomCreate(1, 8, 3, "01-17", 3);
+    EscapeRoom room2 = RoomCreate(2, 8, 3, "01-18", 3);
     Booking a = BookingCreate(1, 2, 4, 4, "usern@1131", "21@comp", 1, 1);
     Booking b = BookingCreate(2, 3, 4, 4, "usern@2131", "31@comp", 2, 1);
     Booking c = BookingCreate(2, 2, 4, 4, "usern@3131", "41@comp", 3, 2);
@@ -224,6 +224,25 @@ static bool testCompanyGetTodayList() {
     return true;
 }
 
+static bool testCompanyClearUserBookings() {
+    EscapeCompany company = CompanyCreate("company@mail");
+    EscapeRoom room = RoomCreate(123, 400, 5, "12-19", 7);
+    User user = UserCreate("user@mail", 8, CHEMISTRY);
+    Booking booking = BookingCreate(1, 16, 400, 5, "user@mail", "company@mail", 
+                                                            CHEMISTRY, 123);
+    ASSERT_TEST(CompanyClearUserBookings(company, NULL)
+                                                == COMPANY_INVALID_PARAMETER);
+    ASSERT_TEST(CompanyClearUserBookings(company, "user@mail") 
+                                                          == COMPANY_SUCCESS);
+    ASSERT_TEST(!CompanyHasBookings(company));
+    BookingDestroy(booking);
+    RoomDestroy(room);
+    UserDestroy(user);
+    CompanyDestroy(company);
+    return true;
+}
+
+
 int main() {
     RUN_TEST(testCompanyCreate);
     RUN_TEST(testCompanyDestroy);
@@ -239,5 +258,6 @@ int main() {
     RUN_TEST(testCompanyHasRooms);
     RUN_TEST(testCompanyGetRecommendedRoom);
     RUN_TEST(testCompanyGetTodayList);
+    RUN_TEST(testCompanyClearUserBookings);
     printf("Done! \n");
 }

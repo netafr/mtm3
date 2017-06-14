@@ -1,12 +1,12 @@
 #include "test_utilities.h"
-#include "../../Faculty.h"
+#include "../Faculty.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../mtm_ex3.h"
+#include "../mtm_ex3.h"
 
 static bool testFacultyCreate() {
     Faculty faculty = FacultyCreate(CIVIL_ENGINEERING);
@@ -302,6 +302,8 @@ static bool testFacultyGetTodayList() {
     return true;
 }
 
+
+
 static bool testFacultyRoomExists() {
     Faculty faculty = FacultyCreate(1);
     EscapeCompany company1 = CompanyCreate("hi@test");
@@ -341,6 +343,27 @@ static bool testFacultyRoomExists() {
     return true;
 }
 
+static bool testFacultyClearUserBookings() {
+    Faculty faculty = FacultyCreate(CHEMISTRY);
+    EscapeCompany company = CompanyCreate("company@mail");
+    EscapeRoom room = RoomCreate(123, 400, 5, "12-19", 7);
+    User user = UserCreate("user@mail", 8, CHEMISTRY);
+    FacultyInsertCompany(faculty, company);
+    Booking booking = BookingCreate(1, 16, 400, 5, "user@mail", "company@mail", 
+                                                            CHEMISTRY, 123);
+    ASSERT_TEST(FacultyClearUserBookings(faculty, NULL)
+                                                == FACULTY_INVALID_PARAMETER);
+    ASSERT_TEST(FacultyClearUserBookings(faculty, "user@mail") 
+                                                          == FACULTY_SUCCESS);
+    ASSERT_TEST(!CompanyHasBookings(company));
+    FacultyDestroy(faculty);
+    CompanyDestroy(company);
+    BookingDestroy(booking);
+    RoomDestroy(room);
+    UserDestroy(user);
+    return true;
+}
+
 int main () {
     RUN_TEST(testFacultyCreate);
     RUN_TEST(testFacultyDestroy);
@@ -359,7 +382,7 @@ int main () {
     RUN_TEST(testFacultyHasRooms);
     RUN_TEST(testFacultyGetRecommendedRoom); 
     RUN_TEST(testFacultyGetTodayList);
-    //ADD testFaculty
+    RUN_TEST(testFacultyClearUserBookings);
     RUN_TEST(testFacultyRoomExists);
     printf("Done! \n");
 }

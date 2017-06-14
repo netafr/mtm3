@@ -1,5 +1,5 @@
 #include "test_utilities.h"
-#include "../../list_mtm1.h"
+#include "../list_mtm1.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -32,7 +32,7 @@ static bool hasLetter(ListElement element,ListFilterKey letter) {
 }
 
 static int stringCmp(ListElement first, ListElement second) {
-	return -strcmp((char*)first, (char*)second);
+	return strcmp((char*)first, (char*)second);
 }
 
 

@@ -1,12 +1,12 @@
 #include "test_utilities.h"
-#include "../../Booking.h"
+#include "../Booking.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../mtm_ex3.h"
+#include "../mtm_ex3.h"
 
 static bool testBookingCreate() {
     ASSERT_TEST(BookingCreate(1, 2, 4, 4, NULL, "das@3131", 1, 6) == NULL);
